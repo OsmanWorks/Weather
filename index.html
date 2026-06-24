@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Global Weather Network — Live Kiosk Display</title>
+<style>
+  :root{
+    --bg:#FAFBFC;
+    --bg-panel:#FFFFFF;
+    --ink:#0F1B2D;
+    --ink-soft:#5B6B82;
+    --line:#E4E9F0;
+    --hot:#E8542C;
+    --hot-soft:#FFE9E1;
+    --cold:#2E86DE;
+    --cold-soft:#E5F1FD;
+    --amber:#F5A623;
+    --good:#1F9D6B;
+    --shadow: 0 10px 30px rgba(15,27,45,0.06);
+    --shadow-lg: 0 24px 60px rgba(15,27,45,0.10);
+    --r-lg:28px;
+    --r-md:18px;
+    --r-sm:10px;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html,body{
+    width:3840px;
+    height:2160px;
+    background:var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+    font-family: "Segoe UI","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+    cursor:none;
+  }
+
+  /* ---------- kill all interactivity for kiosk use ---------- */
+  *{ pointer-events:none !important; }
+  ::selection{ background:transparent; }
+
+  /* ---------- scaling stage: design at 3840x2160, scale to fit any screen ---------- */
+  #stage-outer{
+    position:fixed; inset:0;
+    background:#000;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  #stage{
+    width:3840px; height:2160px;
+    transform-origin: center center;
+    position:relative;
+    background:var(--bg);
+    flex-shrink:0;
+  }
+
+  .num{ font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  /* ================= HEADER ================= */
+  #header{
+    position:absolute; top:0; left:0; width:100%; height:148px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 64px;
+    background:var(--bg-panel);
+    border-bottom:1px solid var(--line);
+    z-index:50;
+  }
+  #brand{ display:flex; align-items:center; gap:28px; }
+  #brand .mark{
+    width:84px; height:84px; border-radius:22px;
+    background:linear-gradient(135deg,var(--cold) 0%, var(--hot) 100%);
+    display:flex; align-items:center; justify-content:center;
+    font-size:42px;
+  }
+  #brand .titles h1{ font-size:38px; font-weight:700; letter-spacing:-0.5px; }
+  #brand .titles p{ font-size:20px; color:var(--ink-soft); font-weight:500; margin-top:2px; }
+
+  #header-right{ display:flex; align-items:center; gap:56px; }
+  .clock-block{ text-align:right; }
+  .clock-block .time{ font-size:44px; font-weight:700; letter-spacing:1px; }
+  .clock-block .date{ font-size:18px; color:var(--ink-soft); font-weight:500; margin-top:2px; }
+  #conn-dot{ width:14px; height:14px; border-radius:50%; background:var(--good); box-shadow:0 0 0 0 rgba(31,157,107,0.5); animation:pulse-dot 2.4s infinite; }
+  @keyframes pulse-dot{
+    0%{ box-shadow:0 0 0 0 rgba(31,157,107,0.45); }
+    70%{ box-shadow:0 0 0 14px rgba(31,157,107,0); }
+    100%{ box-shadow:0 0 0 0 rgba(31,157,107,0); }
+  }
+  #conn-wrap{ display:flex; align-items:center; gap:12px; font-size:18px; color:var(--ink-soft); font-weight:600; }
+
+  /* ================= SCENE AREA ================= */
+  #scene-area{
+    position:absolute; top:148px; left:0; width:100%; height:1900px;
+    overflow:hidden;
+  }
+  .scene{
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    padding:48px 64px 0 64px;
+    opacity:0; pointer-events:none;
+    transform:translateY(24px);
+    transition:opacity 0.9s ease, transform 0.9s ease;
+  }
+  .scene.active{
+    opacity:1; transform:translateY(0);
+    z-index:10;
+  }
+
+  .scene-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:28px; }
+  .scene-head h2{ font-size:46px; font-weight:800; letter-spacing:-1px; }
+  .scene-head .eyebrow{ font-size:20px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:2px; margin-bottom:6px; display:block; }
+  .scene-head .sub{ font-size:22px; color:var(--ink-soft); font-weight:500; }
+
+  .card{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow);
+  }
+
+  /* ================= FOOTER TICKER ================= */
+  #footer{
+    position:absolute; bottom:0; left:0; width:100%; height:112px;
+    background:var(--ink);
+    display:flex; align-items:center;
+    overflow:hidden;
+    z-index:50;
+  }
+  #ticker-track{
+    display:flex; align-items:center;
+    white-space:nowrap;
+    will-change:transform;
+    animation:ticker-scroll linear infinite;
+  }
+  #ticker-track .titem{
+    color:#fff; font-size:26px; font-weight:600; padding:0 56px;
+    display:flex; align-items:center; gap:16px;
+    border-right:1px solid rgba(255,255,255,0.15);
+  }
+  #ticker-track .titem .tag{
+    font-size:15px; font-weight:800; letter-spacing:1.5px;
+    padding:6px 12px; border-radius:8px;
+    text-transform:uppercase;
+  }
+  @keyframes ticker-scroll{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(-50%); }
+  }
+
+  /* progress dots for scene rotation (purely informational, no interaction) */
+  #scene-dots{
+    position:absolute; bottom:128px; left:64px;
+    display:flex; gap:10px; z-index:40;
+  }
+  #scene-dots .d{ width:48px; height:6px; border-radius:4px; background:var(--line); overflow:hidden; position:relative; }
+  #scene-dots .d .fill{ position:absolute; left:0; top:0; height:100%; width:0%; background:var(--ink-soft); }
+  #scene-dots .d.current .fill{ background:linear-gradient(90deg,var(--cold),var(--hot)); }
+
+</style>
+</head>
+<body>
+
+<div id="stage-outer">
+  <div id="stage">
+
+    <!-- ===================== HEADER ===================== -->
+    <div id="header">
+      <div id="brand">
+        <div class="mark">🌍</div>
+        <div class="titles">
+          <h1>Global Weather Network</h1>
+          <p>Live conditions &amp; forecasts across the world</p>
+        </div>
+      </div>
+      <div id="header-right">
+        <div id="conn-wrap"><span id="conn-dot"></span><span id="conn-label">Live</span></div>
+        <div class="clock-block">
+          <div class="time num" id="hdr-time">--:--:--</div>
+          <div class="date" id="hdr-date">-- --- ----</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== SCENES ===================== -->
+    <div id="scene-area">
+      <div class="scene" id="scene-map"></div>
+      <div class="scene" id="scene-hottest"></div>
+      <div class="scene" id="scene-coldest"></div>
+      <div class="scene" id="scene-cities"></div>
+      <div class="scene" id="scene-forecast"></div>
+      <div class="scene" id="scene-alerts"></div>
+    </div>
+
+    <div id="scene-dots"></div>
+
+    <!-- ===================== FOOTER TICKER ===================== -->
+    <div id="footer">
+      <div id="ticker-track"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   GLOBAL WEATHER NETWORK — KIOSK DISPLAY ENGINE
+   Single-file, zero-interaction, self-refreshing weather wall
+   ============================================================ */
+
+/* ---------------------------------------------------------------
+   1. CITY / STATION DATA
+   "extreme" = climate-record style stations, used to find true
+               world hottest/coldest spots right now.
+   "major"   = global business hubs / capitals, shown in grid +
+               used for forecasts. Pakistani cities included since
+               this is for a Pakistan-based retail network.
+   Every entry: id, name, country, flag emoji, lat, lon, kind
+----------------------------------------------------------------*/
+const EXTREME_STATIONS = [
+  {n:"Death Valley",c:"USA",f:"🇺🇸",lat:36.5054,lon:-117.0794},
+  {n:"Kuwait City",c:"Kuwait",f:"🇰🇼",lat:29.3759,lon:47.9774},
+  {n:"Jeddah",c:"Saudi Arabia",f:"🇸🇦",lat:21.4858,lon:39.1925},
+  {n:"Riyadh",c:"Saudi Arabia",f:"🇸🇦",lat:24.7136,lon:46.6753},
+  {n:"Dubai",c:"UAE",f:"🇦🇪",lat:25.2048,lon:55.2708},
+  {n:"Basra",c:"Iraq",f:"🇮🇶",lat:30.5085,lon:47.7835},
+  {n:"Ahvaz",c:"Iran",f:"🇮🇷",lat:31.3203,lon:48.6693},
+  {n:"Jacobabad",c:"Pakistan",f:"🇵🇰",lat:28.2769,lon:68.4514},
+  {n:"Turbat",c:"Pakistan",f:"🇵🇰",lat:25.9899,lon:63.0440},
+  {n:"Nagpur",c:"India",f:"🇮🇳",lat:21.1458,lon:79.0882},
+  {n:"Timbuktu",c:"Mali",f:"🇲🇱",lat:16.7666,lon:-3.0026},
+  {n:"In Salah",c:"Algeria",f:"🇩🇿",lat:27.1939,lon:2.4806},
+  {n:"Bilma",c:"Niger",f:"🇳🇪",lat:18.6912,lon:12.9162},
+  {n:"Faya-Largeau",c:"Chad",f:"🇹🇩",lat:17.9257,lon:19.1043},
+  {n:"Khartoum",c:"Sudan",f:"🇸🇩",lat:15.5007,lon:32.5599},
+  {n:"Dallol",c:"Ethiopia",f:"🇪🇹",lat:12.6116,lon:40.3057},
+  {n:"Marble Bar",c:"Australia",f:"🇦🇺",lat:-21.1761,lon:119.7456},
+  {n:"Oodnadatta",c:"Australia",f:"🇦🇺",lat:-27.5556,lon:135.4456},
+  {n:"Alice Springs",c:"Australia",f:"🇦🇺",lat:-23.6980,lon:133.8807},
+  {n:"Mexicali",c:"Mexico",f:"🇲🇽",lat:32.6245,lon:-115.4523},
+  {n:"Phoenix",c:"USA",f:"🇺🇸",lat:33.4484,lon:-112.0740},
+  {n:"Lytton",c:"Canada",f:"🇨🇦",lat:50.2316,lon:-121.5810},
+  {n:"Rivadavia",c:"Argentina",f:"🇦🇷",lat:-24.1858,lon:-62.8794},
+  {n:"Yakutsk",c:"Russia",f:"🇷🇺",lat:62.0339,lon:129.7330},
+  {n:"Verkhoyansk",c:"Russia",f:"🇷🇺",lat:67.5447,lon:133.3850},
+  {n:"Oymyakon",c:"Russia",f:"🇷🇺",lat:63.4608,lon:142.7858},
+  {n:"Norilsk",c:"Russia",f:"🇷🇺",lat:69.3535,lon:88.2027},
+  {n:"Ulaanbaatar",c:"Mongolia",f:"🇲🇳",lat:47.8864,lon:106.9057},
+  {n:"Fairbanks",c:"USA",f:"🇺🇸",lat:64.8378,lon:-147.7164},
+  {n:"Yellowknife",c:"Canada",f:"🇨🇦",lat:62.4540,lon:-114.3718},
+  {n:"Iqaluit",c:"Canada",f:"🇨🇦",lat:63.7467,lon:-68.5170},
+  {n:"Nuuk",c:"Greenland",f:"🇬🇱",lat:64.1814,lon:-51.6941},
+  {n:"Reykjavik",c:"Iceland",f:"🇮🇸",lat:64.1466,lon:-21.9426},
+  {n:"Vostok Station",c:"Antarctica",f:"🇦🇶",lat:-78.4645,lon:106.8339},
+  {n:"McMurdo Station",c:"Antarctica",f:"🇦🇶",lat:-77.8419,lon:166.6863},
+  {n:"Ushuaia",c:"Argentina",f:"🇦🇷",lat:-54.8019,lon:-68.3030},
+  {n:"Punta Arenas",c:"Chile",f:"🇨🇱",lat:-53.1638,lon:-70.9171},
+  {n:"Astana",c:"Kazakhstan",f:"🇰🇿",lat:51.1605,lon:71.4704},
+  {n:"Harbin",c:"China",f:"🇨🇳",lat:45.8038,lon:126.5340},
+  {n:"Tromsø",c:"Norway",f:"🇳🇴",lat:69.6492,lon:18.9553},
+  {n:"Murmansk",c:"Russia",f:"🇷🇺",lat:68.9707,lon:33.0750},
+];
+
+const MAJOR_CITIES = [
+  {n:"Karachi",c:"Pakistan",f:"🇵🇰",lat:24.8607,lon:67.0011},
+  {n:"Lahore",c:"Pakistan",f:"🇵🇰",lat:31.5497,lon:74.3436},
+  {n:"Islamabad",c:"Pakistan",f:"🇵🇰",lat:33.6844,lon:73.0479},
+  {n:"Dubai",c:"UAE",f:"🇦🇪",lat:25.2048,lon:55.2708},
+  {n:"Riyadh",c:"Saudi Arabia",f:"🇸🇦",lat:24.7136,lon:46.6753},
+  {n:"Doha",c:"Qatar",f:"🇶🇦",lat:25.2854,lon:51.5310},
+  {n:"Istanbul",c:"Turkey",f:"🇹🇷",lat:41.0082,lon:28.9784},
+  {n:"London",c:"UK",f:"🇬🇧",lat:51.5072,lon:-0.1276},
+  {n:"Paris",c:"France",f:"🇫🇷",lat:48.8566,lon:2.3522},
+  {n:"Berlin",c:"Germany",f:"🇩🇪",lat:52.5200,lon:13.4050},
+  {n:"Madrid",c:"Spain",f:"🇪🇸",lat:40.4168,lon:-3.7038},
+  {n:"Rome",c:"Italy",f:"🇮🇹",lat:41.9028,lon:12.4964},
+  {n:"Moscow",c:"Russia",f:"🇷🇺",lat:55.7558,lon:37.6173},
+  {n:"New York",c:"USA",f:"🇺🇸",lat:40.7128,lon:-74.0060},
+  {n:"Los Angeles",c:"USA",f:"🇺🇸",lat:34.0522,lon:-118.2437},
+  {n:"Toronto",c:"Canada",f:"🇨🇦",lat:43.6532,lon:-79.3832},
+  {n:"Mexico City",c:"Mexico",f:"🇲🇽",lat:19.4326,lon:-99.1332},
+  {n:"São Paulo",c:"Brazil",f:"🇧🇷",lat:-23.5505,lon:-46.6333},
+  {n:"Buenos Aires",c:"Argentina",f:"🇦🇷",lat:-34.6037,lon:-58.3816},
+  {n:"Cairo",c:"Egypt",f:"🇪🇬",lat:30.0444,lon:31.2357},
+  {n:"Lagos",c:"Nigeria",f:"🇳🇬",lat:6.5244,lon:3.3792},
+  {n:"Nairobi",c:"Kenya",f:"🇰🇪",lat:-1.2921,lon:36.8219},
+  {n:"Johannesburg",c:"South Africa",f:"🇿🇦",lat:-26.2041,lon:28.0473},
+  {n:"New Delhi",c:"India",f:"🇮🇳",lat:28.6139,lon:77.2090},
+  {n:"Mumbai",c:"India",f:"🇮🇳",lat:19.0760,lon:72.8777},
+  {n:"Dhaka",c:"Bangladesh",f:"🇧🇩",lat:23.8103,lon:90.4125},
+  {n:"Beijing",c:"China",f:"🇨🇳",lat:39.9042,lon:116.4074},
+  {n:"Shanghai",c:"China",f:"🇨🇳",lat:31.2304,lon:121.4737},
+  {n:"Hong Kong",c:"Hong Kong",f:"🇭🇰",lat:22.3193,lon:114.1694},
+  {n:"Tokyo",c:"Japan",f:"🇯🇵",lat:35.6762,lon:139.6503},
+  {n:"Seoul",c:"South Korea",f:"🇰🇷",lat:37.5665,lon:126.9780},
+  {n:"Singapore",c:"Singapore",f:"🇸🇬",lat:1.3521,lon:103.8198},
+  {n:"Kuala Lumpur",c:"Malaysia",f:"🇲🇾",lat:3.1390,lon:101.6869},
+  {n:"Jakarta",c:"Indonesia",f:"🇮🇩",lat:-6.2088,lon:106.8456},
+  {n:"Bangkok",c:"Thailand",f:"🇹🇭",lat:13.7563,lon:100.5018},
+  {n:"Manila",c:"Philippines",f:"🇵🇭",lat:14.5995,lon:120.9842},
+  {n:"Sydney",c:"Australia",f:"🇦🇺",lat:-33.8688,lon:151.2093},
+  {n:"Melbourne",c:"Australia",f:"🇦🇺",lat:-37.8136,lon:144.9631},
+  {n:"Auckland",c:"New Zealand",f:"🇳🇿",lat:-36.8485,lon:174.7633},
+];
+
+// Master de-duplicated list for the map + batched fetch
+function buildMasterList(){
+  const seen = new Set();
+  const all = [];
+  [...EXTREME_STATIONS.map(s=>({...s,kind:'extreme'})), ...MAJOR_CITIES.map(s=>({...s,kind:'major'}))]
+    .forEach(s=>{
+      const key = s.n+s.c;
+      if(seen.has(key)) return;
+      seen.add(key);
+      s.id = all.length;
+      all.push(s);
+    });
+  return all;
+}
+const STATIONS = buildMasterList();
+
+/* ---------------------------------------------------------------
+   2. WMO WEATHER CODE -> icon / label / palette
+----------------------------------------------------------------*/
+function decodeWeather(code, isDay){
+  const map = {
+    0:["Clear sky", isDay?"☀️":"🌙"],
+    1:["Mainly clear", isDay?"🌤️":"🌙"],
+    2:["Partly cloudy", isDay?"⛅":"☁️"],
+    3:["Overcast", "☁️"],
+    45:["Fog", "🌫️"], 48:["Icy fog", "🌫️"],
+    51:["Light drizzle", "🌦️"], 53:["Drizzle", "🌦️"], 55:["Dense drizzle", "🌧️"],
+    56:["Freezing drizzle", "🌧️"], 57:["Freezing drizzle", "🌧️"],
+    61:["Light rain", "🌦️"], 63:["Rain", "🌧️"], 65:["Heavy rain", "🌧️"],
+    66:["Freezing rain", "🌧️"], 67:["Freezing rain", "🌧️"],
+    71:["Light snow", "🌨️"], 73:["Snow", "❄️"], 75:["Heavy snow", "❄️"],
+    77:["Snow grains", "❄️"],
+    80:["Light showers", "🌦️"], 81:["Showers", "🌧️"], 82:["Violent showers", "⛈️"],
+    85:["Snow showers", "🌨️"], 86:["Heavy snow showers", "❄️"],
+    95:["Thunderstorm", "⛈️"], 96:["Thunderstorm + hail", "⛈️"], 99:["Severe thunderstorm", "⛈️"],
+  };
+  return map[code] || ["—", "🌡️"];
+}
+
+/* ---------------------------------------------------------------
+   3. TEMPERATURE -> COLOR (for map dots / heat bars)
+----------------------------------------------------------------*/
+function tempColor(t){
+  // clamp -40..50 -> blue..amber..red
+  const stops = [
+    [-40,[46,134,222]],[-10,[91,170,230]],[0,[140,200,235]],[10,[120,200,160]],
+    [20,[245,196,60]],[30,[235,140,40]],[40,[230,84,44]],[50,[170,30,30]]
+  ];
+  let lo = stops[0], hi = stops[stops.length-1];
+  for(let i=0;i<stops.length-1;i++){
+    if(t>=stops[i][0] && t<=stops[i+1][0]){ lo=stops[i]; hi=stops[i+1]; break; }
+  }
+  if(t < stops[0][0]) return `rgb(${stops[0][1].join(',')})`;
+  if(t > stops[stops.length-1][0]) return `rgb(${stops[stops.length-1][1].join(',')})`;
+  const span = hi[0]-lo[0] || 1;
+  const f = (t-lo[0])/span;
+  const c = lo[1].map((v,i)=> Math.round(v + (hi[1][i]-v)*f));
+  return `rgb(${c.join(',')})`;
+}
+
+/* ---------------------------------------------------------------
+   4. DATA STORE
+----------------------------------------------------------------*/
+const DataStore = {
+  stations: STATIONS,      // merged with live weather as it arrives
+  lastUpdated: null,
+  online: true,
+};
+
+/* Chunk an array */
+function chunk(arr, size){
+  const out = [];
+  for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+  return out;
+}
+
+async function fetchWeatherBatch(stations){
+  const lats = stations.map(s=>s.lat).join(',');
+  const lons = stations.map(s=>s.lon).join(',');
+  const params = [
+    "current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,pressure_msl,cloud_cover,uv_index,is_day",
+    "daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code,wind_speed_10m_max,uv_index_max",
+    "timezone=auto","forecast_days=7"
+  ].join('&');
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&${params}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('weather fetch failed: '+res.status);
+  const data = await res.json();
+  // API returns either a single object (1 location) or an array (multi-location)
+  const list = Array.isArray(data) ? data : [data];
+  list.forEach((d, idx) => {
+    const station = stations[idx];
+    if(!station) return;
+    station.current = d.current || null;
+    station.daily = d.daily || null;
+    station.utcOffsetSeconds = d.utc_offset_seconds || 0;
+    station.tz = d.timezone || null;
+  });
+}
+
+async function fetchAQIBatch(stations){
+  const lats = stations.map(s=>s.lat).join(',');
+  const lons = stations.map(s=>s.lon).join(',');
+  const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lats}&longitude=${lons}&current=us_aqi,pm2_5,pm10,ozone`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('aqi fetch failed: '+res.status);
+  const data = await res.json();
+  const list = Array.isArray(data) ? data : [data];
+  list.forEach((d, idx) => {
+    const station = stations[idx];
+    if(!station) return;
+    station.aqi = d.current || null;
+  });
+}
+
+async function refreshAllWeather(){
+  try{
+    const batches = chunk(DataStore.stations, 45);
+    for(const b of batches){ await fetchWeatherBatch(b); }
+    DataStore.lastUpdated = new Date();
+    setOnline(true);
+  }catch(e){
+    console.warn('Weather refresh failed', e);
+    setOnline(false);
+  }
+}
+
+async function refreshAllAQI(){
+  try{
+    const batches = chunk(DataStore.stations, 45);
+    for(const b of batches){ await fetchAQIBatch(b); }
+  }catch(e){
+    console.warn('AQI refresh failed', e);
+  }
+}
+
+/* ---------------------------------------------------------------
+   5. WORLD MAP — tries a real coastline map (D3 + world-atlas),
+   falls back to a clean graticule/dot projection if that data
+   can't be loaded (e.g. restricted shop network). Either way the
+   station markers always render correctly.
+----------------------------------------------------------------*/
+const MapEngine = {
+  ready:false,
+  mode:null, // 'geo' | 'fallback'
+  projection:null,
+  path:null,
+  world:null,
+};
+
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function initMap(){
+  const W = 1760, H = 880;
+  try{
+    if(!window.d3){
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js');
+    }
+    if(!window.topojson){
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/topojson-client/3.1.0/topojson-client.min.js');
+    }
+    const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+    if(!res.ok) throw new Error('atlas fetch failed');
+    const topo = await res.json();
+    const countries = window.topojson.feature(topo, topo.objects.countries);
+    const projection = window.d3.geoNaturalEarth1().fitSize([W,H], countries);
+    const path = window.d3.geoPath(projection);
+    MapEngine.mode = 'geo';
+    MapEngine.projection = projection;
+    MapEngine.path = path;
+    MapEngine.world = countries;
+    MapEngine.ready = true;
+  }catch(e){
+    console.warn('Falling back to simple map projection', e);
+    // simple equirectangular fallback, no external geometry needed
+    MapEngine.mode = 'fallback';
+    MapEngine.projection = (lon,lat)=>[ (lon+180)/360*W, (90-lat)/180*H ];
+    MapEngine.ready = true;
+  }
+  return {W,H};
+}
+
+function projectStation(s, W, H){
+  if(MapEngine.mode === 'geo'){
+    const p = MapEngine.projection([s.lon, s.lat]);
+    return p || [W/2,H/2];
+  }
+  return MapEngine.projection(s.lon, s.lat);
+}
+
+function renderMapSVG(W,H){
+  let landPaths = '';
+  if(MapEngine.mode === 'geo'){
+    landPaths = MapEngine.world.features.map(f=>{
+      const d = MapEngine.path(f);
+      return d ? `<path d="${d}" fill="#EEF2F7" stroke="#D6DEE8" stroke-width="1"/>` : '';
+    }).join('');
+  } else {
+    // graticule fallback: latitude/longitude grid as a stand-in backdrop
+    let grid = '';
+    for(let lon=-180; lon<=180; lon+=20){
+      const a = MapEngine.projection(lon,-85), b = MapEngine.projection(lon,85);
+      grid += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#E7ECF2" stroke-width="1.5"/>`;
+    }
+    for(let lat=-80; lat<=80; lat+=20){
+      const a = MapEngine.projection(-180,lat), b = MapEngine.projection(180,lat);
+      grid += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#E7ECF2" stroke-width="1.5"/>`;
+    }
+    landPaths = `<rect x="0" y="0" width="${W}" height="${H}" fill="#F4F7FA"/>` + grid;
+  }
+  return landPaths;
+}
+
+/* ---------------------------------------------------------------
+   6. SCENE RENDERERS
+----------------------------------------------------------------*/
+function liveStations(){
+  return DataStore.stations.filter(s=>s.current && typeof s.current.temperature_2m === 'number');
+}
+function topHottest(n){
+  return [...liveStations()].sort((a,b)=>b.current.temperature_2m - a.current.temperature_2m).slice(0,n);
+}
+function topColdest(n){
+  return [...liveStations()].sort((a,b)=>a.current.temperature_2m - b.current.temperature_2m).slice(0,n);
+}
+
+function fmtTime(station){
+  if(!station.current) return '--:--';
+  const off = station.utcOffsetSeconds || 0;
+  const utc = Date.now() + off*1000;
+  const d = new Date(utc);
+  return d.toISOString().substr(11,5);
+}
+
+/* ---- SCENE: World Map ---- */
+async function renderMapScene(){
+  const el = document.getElementById('scene-map');
+  const {W,H} = await initMap();
+  const land = renderMapSVG(W,H);
+
+  const hot5 = topHottest(5), cold5 = topColdest(5);
+  const hotIds = new Set(hot5.map(s=>s.id)), coldIds = new Set(cold5.map(s=>s.id));
+
+  let dots = '';
+  liveStations().forEach(s=>{
+    const [x,y] = projectStation(s,W,H);
+    const t = s.current.temperature_2m;
+    const color = tempColor(t);
+    const isHot = hotIds.has(s.id), isCold = coldIds.has(s.id);
+    const r = isHot||isCold ? 13 : 7;
+    const pulse = isHot||isCold ? `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="0.35"><animate attributeName="r" values="${r};${r+14};${r}" dur="2.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.35;0;0.35" dur="2.6s" repeatCount="indefinite"/></circle>` : '';
+    dots += `${pulse}<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" stroke="#fff" stroke-width="2.5"/>`;
+    if(isHot||isCold){
+      dots += `<text x="${x}" y="${y-r-10}" text-anchor="middle" font-size="17" font-weight="700" fill="#0F1B2D" font-family="Segoe UI">${s.n} ${Math.round(t)}°</text>`;
+    }
+  });
+
+  el.innerHTML = `
+    <div class="scene-head">
+      <div><span class="eyebrow">Live Map · ${liveStations().length} stations</span><h2>World Weather Right Now</h2></div>
+      <div class="sub">Updated ${DataStore.lastUpdated ? DataStore.lastUpdated.toISOString().substr(11,5)+' UTC' : '—'}</div>
+    </div>
+    <div style="display:flex; gap:32px; height:1560px;">
+      <div class="card" style="flex:1; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">
+          <rect x="0" y="0" width="${W}" height="${H}" fill="#FFFFFF"/>
+          ${land}
+          ${dots}
+        </svg>
+      </div>
+      <div style="width:620px; display:flex; flex-direction:column; gap:24px;">
+        ${leaderCardHTML('🔥 Hottest Now', hot5, 'hot')}
+        ${leaderCardHTML('❄️ Coldest Now', cold5, 'cold')}
+      </div>
+    </div>
+  `;
+}
+
+function leaderCardHTML(title, list, kind){
+  const accent = kind==='hot' ? 'var(--hot)' : 'var(--cold)';
+  const soft = kind==='hot' ? 'var(--hot-soft)' : 'var(--cold-soft)';
+  const rows = list.map((s,i)=>{
+    const [label,icon] = decodeWeather(s.current.weather_code, s.current.is_day);
+    return `<div style="display:flex; align-items:center; gap:18px; padding:16px 0; ${i<list.length-1?'border-bottom:1px solid var(--line);':''}">
+      <div style="width:40px; font-size:24px; font-weight:800; color:var(--ink-soft);">${i+1}</div>
+      <div style="font-size:30px;">${s.f}</div>
+      <div style="flex:1;">
+        <div style="font-size:24px; font-weight:700;">${s.n}</div>
+        <div style="font-size:16px; color:var(--ink-soft);">${s.c} · ${label}</div>
+      </div>
+      <div style="font-size:22px;">${icon}</div>
+      <div class="num" style="font-size:36px; font-weight:800; color:${accent}; min-width:120px; text-align:right;">${Math.round(s.current.temperature_2m)}°C</div>
+    </div>`;
+  }).join('');
+  return `<div class="card" style="flex:1; padding:28px 32px; display:flex; flex-direction:column;">
+    <div style="font-size:24px; font-weight:800; margin-bottom:8px; color:${accent};">${title}</div>
+    <div style="flex:1; overflow:hidden;">${rows}</div>
+  </div>`;
+}
+
+/* ---- SCENE: Hottest leaderboard (big) ---- */
+function renderHottestScene(){
+  const el = document.getElementById('scene-hottest');
+  const list = topHottest(10);
+  el.innerHTML = bigLeaderboard('🔥 Top 10 Hottest Places on Earth', 'Right now, across every tracked station worldwide', list, 'hot');
+}
+function renderColdestScene(){
+  const el = document.getElementById('scene-coldest');
+  const list = topColdest(10);
+  el.innerHTML = bigLeaderboard('❄️ Top 10 Coldest Places on Earth', 'Right now, across every tracked station worldwide', list, 'cold');
+}
+function bigLeaderboard(title, sub, list, kind){
+  const accent = kind==='hot' ? 'var(--hot)' : 'var(--cold)';
+  const half = Math.ceil(list.length/2);
+  const cols = [list.slice(0,half), list.slice(half)];
+  const colHTML = cols.map(col => `<div style="flex:1; display:flex; flex-direction:column; gap:18px;">
+    ${col.map((s,i)=>{
+      const rank = list.indexOf(s)+1;
+      const [label,icon] = decodeWeather(s.current.weather_code, s.current.is_day);
+      return `<div class="card" style="display:flex; align-items:center; gap:26px; padding:26px 34px;">
+        <div style="font-size:40px; font-weight:900; color:var(--ink-soft); width:64px;" class="num">#${rank}</div>
+        <div style="font-size:48px;">${s.f}</div>
+        <div style="flex:1;">
+          <div style="font-size:32px; font-weight:800;">${s.n}, ${s.c}</div>
+          <div style="font-size:20px; color:var(--ink-soft); margin-top:4px;">${icon} ${label} · Feels like ${Math.round(s.current.apparent_temperature)}°C · Humidity ${s.current.relative_humidity_2m}%</div>
+        </div>
+        <div class="num" style="font-size:56px; font-weight:900; color:${accent};">${Math.round(s.current.temperature_2m)}°</div>
+      </div>`;
+    }).join('')}
+  </div>`).join('');
+
+  return `
+    <div class="scene-head">
+      <div><span class="eyebrow">Global Extremes</span><h2>${title}</h2></div>
+      <div class="sub">${sub}</div>
+    </div>
+    <div style="display:flex; gap:32px;">${colHTML}</div>
+  `;
+}
+
+/* ---- SCENE: Major cities grid ---- */
+function renderCitiesScene(){
+  const el = document.getElementById('scene-cities');
+  const cities = DataStore.stations.filter(s=>s.kind==='major' && s.current);
+  const cards = cities.map(s=>{
+    const [label,icon] = decodeWeather(s.current.weather_code, s.current.is_day);
+    return `<div class="card" style="padding:22px 24px; display:flex; flex-direction:column; gap:10px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="font-size:22px; font-weight:800;">${s.f} ${s.n}</div>
+        <div class="num" style="font-size:18px; color:var(--ink-soft); font-weight:700;">${fmtTime(s)}</div>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="font-size:42px;">${icon}</div>
+        <div class="num" style="font-size:46px; font-weight:900;">${Math.round(s.current.temperature_2m)}°</div>
+      </div>
+      <div style="font-size:15px; color:var(--ink-soft);">${label} · Feels ${Math.round(s.current.apparent_temperature)}° · 💧${s.current.relative_humidity_2m}% · 💨${Math.round(s.current.wind_speed_10m)}km/h</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="scene-head">
+      <div><span class="eyebrow">Global Cities</span><h2>Major Cities — Live Conditions</h2></div>
+      <div class="sub">${cities.length} cities tracked</div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(8, 1fr); gap:18px;">${cards}</div>
+  `;
+}
+
+/* ---- SCENE: 7-day forecast / predictions ---- */
+let forecastPage = 0;
+function renderForecastScene(){
+  const el = document.getElementById('scene-forecast');
+  const cities = DataStore.stations.filter(s=>s.kind==='major' && s.daily);
+  const perPage = 6;
+  const pages = chunk(cities, perPage);
+  if(pages.length===0){ el.innerHTML=''; return; }
+  const page = pages[forecastPage % pages.length];
+  forecastPage++;
+
+  const dayLabels = (page[0].daily.time || []).map(d=>{
+    const dt = new Date(d+'T00:00:00');
+    return dt.toLocaleDateString('en-US',{weekday:'short'});
+  });
+
+  const rows = page.map(s=>{
+    const days = s.daily.time.map((d,i)=>{
+      const [label,icon] = decodeWeather(s.daily.weather_code[i], true);
+      const max = Math.round(s.daily.temperature_2m_max[i]);
+      const min = Math.round(s.daily.temperature_2m_min[i]);
+      return `<div style="flex:1; text-align:center;">
+        <div style="font-size:15px; color:var(--ink-soft); font-weight:700; margin-bottom:6px;">${dayLabels[i]}</div>
+        <div style="font-size:30px;">${icon}</div>
+        <div class="num" style="font-size:19px; font-weight:800; margin-top:4px;">${max}°</div>
+        <div class="num" style="font-size:15px; color:var(--ink-soft);">${min}°</div>
+      </div>`;
+    }).join('');
+    return `<div class="card" style="padding:20px 28px; display:flex; align-items:center; gap:24px;">
+      <div style="width:230px;">
+        <div style="font-size:24px; font-weight:800;">${s.f} ${s.n}</div>
+        <div style="font-size:15px; color:var(--ink-soft);">${s.c}</div>
+      </div>
+      <div style="flex:1; display:flex; gap:8px;">${days}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="scene-head">
+      <div><span class="eyebrow">7-Day Outlook</span><h2>Forecasts &amp; Predictions</h2></div>
+      <div class="sub">Page ${(forecastPage-1)%pages.length+1} of ${pages.length}</div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px;">${rows}</div>
+  `;
+}
+
+/* ---- SCENE: Alerts + Air Quality ---- */
+function computeAlerts(){
+  const alerts = [];
+  liveStations().forEach(s=>{
+    const t = s.current.temperature_2m;
+    const wind = s.current.wind_speed_10m;
+    const precip = s.current.precipitation;
+    if(t >= 45) alerts.push({s, kind:'heat', text:`Extreme heat: ${Math.round(t)}°C`, icon:'🔥', color:'var(--hot)'});
+    if(t <= -25) alerts.push({s, kind:'cold', text:`Extreme cold: ${Math.round(t)}°C`, icon:'🥶', color:'var(--cold)'});
+    if(wind >= 50) alerts.push({s, kind:'wind', text:`High winds: ${Math.round(wind)} km/h`, icon:'💨', color:'var(--amber)'});
+    if(precip >= 10) alerts.push({s, kind:'rain', text:`Heavy precipitation: ${precip.toFixed(1)} mm`, icon:'🌧️', color:'var(--cold)'});
+  });
+  // forecast-based: scan tomorrow's max/min across major cities for upcoming extremes
+  DataStore.stations.filter(s=>s.kind==='major' && s.daily).forEach(s=>{
+    const maxT = s.daily.temperature_2m_max?.[1];
+    const minT = s.daily.temperature_2m_min?.[1];
+    const precipSum = s.daily.precipitation_sum?.[1];
+    if(maxT >= 42) alerts.push({s, kind:'heat-f', text:`Tomorrow: heatwave, high ${Math.round(maxT)}°C`, icon:'⚠️', color:'var(--hot)'});
+    if(minT <= -15) alerts.push({s, kind:'cold-f', text:`Tomorrow: deep freeze, low ${Math.round(minT)}°C`, icon:'⚠️', color:'var(--cold)'});
+    if(precipSum >= 25) alerts.push({s, kind:'rain-f', text:`Tomorrow: heavy rain expected, ${Math.round(precipSum)}mm`, icon:'⚠️', color:'var(--cold)'});
+  });
+  return alerts.slice(0,14);
+}
+
+function renderAlertsScene(){
+  const el = document.getElementById('scene-alerts');
+  const alerts = computeAlerts();
+  const uvLeaders = [...DataStore.stations.filter(s=>s.current && typeof s.current.uv_index==='number')]
+    .sort((a,b)=>b.current.uv_index - a.current.uv_index).slice(0,6);
+
+  const alertCards = alerts.length ? alerts.map(a=>`
+    <div class="card" style="padding:20px 26px; display:flex; align-items:center; gap:20px; border-left:6px solid ${a.color};">
+      <div style="font-size:34px;">${a.icon}</div>
+      <div style="flex:1;">
+        <div style="font-size:22px; font-weight:800;">${a.s.f} ${a.s.n}, ${a.s.c}</div>
+        <div style="font-size:18px; color:var(--ink-soft); margin-top:2px;">${a.text}</div>
+      </div>
+    </div>`).join('') : `<div class="card" style="padding:40px; text-align:center; font-size:24px; color:var(--ink-soft);">✅ No extreme conditions detected right now</div>`;
+
+  const uvHTML = uvLeaders.map(s=>`
+    <div style="display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--line);">
+      <div style="font-size:24px;">${s.f}</div>
+      <div style="flex:1; font-size:20px; font-weight:700;">${s.n}</div>
+      <div class="num" style="font-size:24px; font-weight:800; color:var(--amber);">UV ${s.current.uv_index.toFixed(1)}</div>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="scene-head">
+      <div><span class="eyebrow">Smart Detection</span><h2>Weather Alerts &amp; UV Index</h2></div>
+      <div class="sub">Auto-generated from live + forecast thresholds</div>
+    </div>
+    <div style="display:flex; gap:32px; height:1560px;">
+      <div style="flex:1.4; display:flex; flex-direction:column; gap:16px; overflow:hidden;">${alertCards}</div>
+      <div class="card" style="width:560px; padding:28px 32px;">
+        <div style="font-size:24px; font-weight:800; margin-bottom:10px; color:var(--amber);">☀️ Highest UV Index</div>
+        ${uvHTML}
+      </div>
+    </div>
+  `;
+}
+
+
+
+/* ---------------------------------------------------------------
+   7. TICKER (bottom marquee)
+----------------------------------------------------------------*/
+function buildTicker(){
+  const track = document.getElementById('ticker-track');
+  const hot1 = topHottest(1)[0];
+  const cold1 = topColdest(1)[0];
+  const items = [];
+  if(hot1) items.push({tag:'HOTTEST', color:'var(--hot)', bg:'var(--hot-soft)', text:`${hot1.n}, ${hot1.c} — ${Math.round(hot1.current.temperature_2m)}°C right now`});
+  if(cold1) items.push({tag:'COLDEST', color:'var(--cold)', bg:'var(--cold-soft)', text:`${cold1.n}, ${cold1.c} — ${Math.round(cold1.current.temperature_2m)}°C right now`});
+  const alerts = computeAlerts().slice(0,6);
+  alerts.forEach(a=> items.push({tag:'ALERT', color:'#fff', bg:a.color, text:`${a.s.n}, ${a.s.c} — ${a.text}`}));
+  DataStore.stations.filter(s=>s.kind==='major' && s.current).slice(0,16).forEach(s=>{
+    const [label] = decodeWeather(s.current.weather_code, s.current.is_day);
+    items.push({tag:s.f, color:'var(--ink)', bg:'transparent', text:`${s.n} ${Math.round(s.current.temperature_2m)}°C, ${label}`});
+  });
+  if(items.length===0) items.push({tag:'STATUS',color:'#fff',bg:'var(--ink-soft)',text:'Connecting to global weather network…'});
+
+  const html = items.map(it=>`<div class="titem"><span class="tag" style="background:${it.bg}; color:${it.color==='#fff'?'#fff':it.color};">${it.tag}</span>${it.text}</div>`).join('');
+  track.innerHTML = html + html; // duplicate for seamless loop
+  const widthEstimate = items.length * 480; // rough px estimate for animation timing
+  track.style.animationDuration = Math.max(60, widthEstimate/55) + 's';
+}
+
+/* ---------------------------------------------------------------
+   8. HEADER CLOCK (local device time, UTC shown too via title)
+----------------------------------------------------------------*/
+function tickClock(){
+  const now = new Date();
+  document.getElementById('hdr-time').textContent = now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('hdr-date').textContent = now.toLocaleDateString('en-US',{weekday:'long', day:'numeric', month:'long', year:'numeric'});
+}
+
+/* ---------------------------------------------------------------
+   9. STAGE SCALING — design is fixed at 3840x2160, scale to fit
+   whatever screen this is opened on (4K TV = scale 1, smaller
+   preview windows shrink proportionally, letterboxed).
+----------------------------------------------------------------*/
+function scaleStage(){
+  const stage = document.getElementById('stage');
+  const scale = Math.min(window.innerWidth/3840, window.innerHeight/2160);
+  stage.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------------------------------------------------------------
+   10. SCENE ROTATION ENGINE
+----------------------------------------------------------------*/
+const SCENES = [
+  {id:'scene-map', render:renderMapScene, dwell:18000},
+  {id:'scene-hottest', render:renderHottestScene, dwell:14000},
+  {id:'scene-coldest', render:renderColdestScene, dwell:14000},
+  {id:'scene-cities', render:renderCitiesScene, dwell:16000},
+  {id:'scene-forecast', render:renderForecastScene, dwell:16000},
+  {id:'scene-alerts', render:renderAlertsScene, dwell:15000},
+];
+let sceneIndex = 0;
+let sceneTimer = null;
+let dotTimer = null;
+
+function buildDots(){
+  const wrap = document.getElementById('scene-dots');
+  wrap.innerHTML = SCENES.map((_,i)=>`<div class="d" data-i="${i}"><div class="fill"></div></div>`).join('');
+}
+
+async function showScene(i){
+  sceneIndex = i % SCENES.length;
+  const scene = SCENES[sceneIndex];
+  try{
+    await scene.render();
+  }catch(e){
+    console.warn('Scene render error', scene.id, e);
+  }
+  document.querySelectorAll('.scene').forEach(el=>el.classList.remove('active'));
+  document.getElementById(scene.id).classList.add('active');
+
+  // progress dots
+  document.querySelectorAll('#scene-dots .d').forEach((d,idx)=>{
+    d.classList.toggle('current', idx===sceneIndex);
+    const fill = d.querySelector('.fill');
+    fill.style.transition = 'none';
+    fill.style.width = idx===sceneIndex ? '0%' : (idx < sceneIndex ? '100%':'0%');
+  });
+  requestAnimationFrame(()=>{
+    const fill = document.querySelectorAll('#scene-dots .d')[sceneIndex].querySelector('.fill');
+    fill.style.transition = `width ${scene.dwell}ms linear`;
+    fill.style.width = '100%';
+  });
+
+  clearTimeout(sceneTimer);
+  sceneTimer = setTimeout(()=> showScene(sceneIndex+1), scene.dwell);
+}
+
+/* ---------------------------------------------------------------
+   11. BOOT SEQUENCE
+----------------------------------------------------------------*/
+async function boot(){
+  scaleStage();
+  buildDots();
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  await initMap();
+  await refreshAllWeather();
+  await refreshAllAQI();
+  buildTicker();
+
+  showScene(0);
+
+  // periodic data refresh — weather hourly upstream, refresh every 12 min;
+  // ticker rebuilt every refresh so the marquee always reflects latest data
+  setInterval(async ()=>{
+    await refreshAllWeather();
+    buildTicker();
+  }, 12*60*1000);
+
+  setInterval(refreshAllAQI, 30*60*1000);
+
+  // safety: if a scene happens to be open when fresh data lands, re-render current scene softly
+  setInterval(()=>{ /* no-op hook reserved for future smart refresh */ }, 60000);
+}
+
+window.addEventListener('load', boot);
+window.addEventListener('error', (e)=>{ console.warn('Caught runtime error, kiosk continues:', e.message); });
+</script>
+</body>
+</html>
