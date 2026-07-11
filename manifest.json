@@ -1,16 +1,22 @@
 {
   "name": "Chaajao Analytics",
   "short_name": "Chaajao",
-  "description": "Chaajao ke social platforms ki weekly growth, admission test dates aur results — sab ek jagah.",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#080B18",
+  "background_color": "#00224D",
   "theme_color": "#00224D",
+  "orientation": "portrait",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
