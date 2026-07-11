@@ -1,1103 +1,694 @@
 <!DOCTYPE html>
-<html lang="ur-Latn">
+<html lang="ur">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#00224D">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Chaajao">
-<meta name="description" content="Chaajao ke social platforms ki weekly growth, admission test dates aur results.">
-<title>Chaajao Analytics</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<style>
-:root{
-  --navy:#00224D;
-  --plum:#5D0E41;
-  --crimson:#A0153E;
-  --rose:#FF204E;
-  --bg:#080B18;
-  --surface:#0F1430;
-  --surface-2:#151B3D;
-  --surface-3:#1B2248;
-  --border:rgba(255,255,255,0.08);
-  --border-soft:rgba(255,255,255,0.05);
-  --text:#F5F6FB;
-  --text-dim:#9BA2C7;
-  --text-faint:#6870A0;
-  --good:#2FD69B;
-  --warn:#FFB020;
-  --grad-main:linear-gradient(135deg, var(--navy) 0%, var(--plum) 38%, var(--crimson) 68%, var(--rose) 100%);
-  --grad-soft:linear-gradient(135deg, rgba(0,34,77,0.55) 0%, rgba(93,14,65,0.5) 40%, rgba(160,21,62,0.45) 70%, rgba(255,32,78,0.4) 100%);
-  --font-display:'Sora', system-ui, sans-serif;
-  --font-body:'Inter', system-ui, sans-serif;
-  --font-mono:'JetBrains Mono', monospace;
-  --shell-max:430px;
-  --safe-t:env(safe-area-inset-top);
-  --safe-b:env(safe-area-inset-bottom);
-  --tabbar-h:76px;
-}
-*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-html{
-  touch-action:manipulation;
-  -webkit-text-size-adjust:100%;
-  text-size-adjust:100%;
-}
-body{
-  margin:0;
-  background:
-    radial-gradient(circle at 15% -10%, rgba(93,14,65,0.55), transparent 55%),
-    radial-gradient(circle at 90% 0%, rgba(160,21,62,0.35), transparent 45%),
-    #05070F;
-  min-height:100dvh;
-  font-family:var(--font-body);
-  color:var(--text);
-  display:flex;
-  justify-content:center;
-  overscroll-behavior:none;
-}
-input, select, textarea, button{ font-size:16px; }
-.app-shell{
-  width:100%;
-  max-width:var(--shell-max);
-  min-height:100dvh;
-  min-height:100svh;
-  background:var(--bg);
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-  box-shadow:0 0 80px rgba(0,0,0,0.5);
-}
-@media (min-width:480px){
-  body{ padding:24px 0; }
-  .app-shell{ min-height:calc(100dvh - 48px); border-radius:34px; border:1px solid var(--border); }
-}
-
-/* ---------- Splash ---------- */
-#splash{
-  position:fixed; inset:0; z-index:100;
-  background:var(--grad-main);
-  display:flex; align-items:center; justify-content:center;
-  flex-direction:column; gap:18px;
-  max-width:var(--shell-max); margin:0 auto;
-}
-@media (min-width:480px){ #splash{ border-radius:34px; } }
-.splash-mark{
-  width:104px; height:104px; border-radius:28px;
-  background:rgba(255,255,255,0.12);
-  border:1px solid rgba(255,255,255,0.25);
-  display:flex; align-items:center; justify-content:center;
-  animation:pulseMark 1.8s ease-in-out infinite;
-  backdrop-filter:blur(6px);
-}
-.splash-mark svg{ width:56px; height:56px; }
-@keyframes pulseMark{
-  0%,100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(255,255,255,0.25); }
-  50%{ transform:scale(1.06); box-shadow:0 0 0 16px rgba(255,255,255,0); }
-}
-.splash-title{ font-family:var(--font-display); font-weight:800; font-size:24px; letter-spacing:0.2px; color:#fff; }
-.splash-sub{ font-size:13px; color:rgba(255,255,255,0.75); font-family:var(--font-mono); letter-spacing:0.5px; }
-.splash-dots{ display:flex; gap:6px; margin-top:6px; }
-.splash-dots span{ width:6px; height:6px; border-radius:50%; background:#fff; opacity:0.35; animation:dotBounce 1.2s infinite; }
-.splash-dots span:nth-child(2){ animation-delay:0.15s; }
-.splash-dots span:nth-child(3){ animation-delay:0.3s; }
-@keyframes dotBounce{ 0%,80%,100%{ opacity:0.3; transform:translateY(0);} 40%{ opacity:1; transform:translateY(-4px);} }
-
-/* ---------- Error screen ---------- */
-#error-screen{
-  position:fixed; inset:0; z-index:99; display:none;
-  max-width:var(--shell-max); margin:0 auto;
-  background:var(--bg);
-  flex-direction:column; align-items:center; justify-content:center;
-  gap:14px; padding:32px; text-align:center;
-}
-@media (min-width:480px){ #error-screen{ border-radius:34px; } }
-.error-icon{ width:72px; height:72px; border-radius:20px; background:var(--grad-soft); display:flex; align-items:center; justify-content:center; border:1px solid var(--border); }
-.error-title{ font-family:var(--font-display); font-weight:700; font-size:19px; }
-.error-body{ color:var(--text-dim); font-size:14px; line-height:1.6; max-width:280px; }
-.retry-btn{
-  margin-top:6px; border:none; cursor:pointer;
-  padding:13px 28px; border-radius:100px; font-family:var(--font-display); font-weight:700; font-size:14px;
-  background:var(--grad-main); color:#fff; letter-spacing:0.2px;
-  box-shadow:0 8px 24px rgba(255,32,78,0.25);
-}
-.retry-btn:active{ transform:scale(0.97); }
-
-/* ---------- App shell chrome ---------- */
-#app{ display:flex; flex-direction:column; flex:1; min-height:0; }
-#offline-banner{
-  display:none; align-items:center; gap:8px;
-  background:linear-gradient(90deg, var(--crimson), var(--rose));
-  color:#fff; font-size:12.5px; font-weight:600;
-  padding:9px 16px; padding-top:calc(9px + var(--safe-t));
-  text-align:center; justify-content:center;
-}
-#offline-banner.show{ display:flex; }
-#offline-banner .dot{ width:6px; height:6px; border-radius:50%; background:#fff; animation:dotBounce 1s infinite; }
-
-#pages{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:calc(var(--tabbar-h) + var(--safe-b) + 10px); scroll-behavior:smooth; }
-.page{ display:none; padding:0 18px; animation:fadeIn 0.35s ease; }
-.page.active{ display:block; }
-@keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
-
-.page-header{ padding-top:calc(20px + var(--safe-t)); padding-bottom:6px; }
-.page-eyebrow{ font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--rose); font-weight:600; }
-.page-title{ font-family:var(--font-display); font-weight:800; font-size:25px; margin:4px 0 2px; }
-.page-desc{ color:var(--text-dim); font-size:13px; line-height:1.5; }
-
-/* Top brand bar (overview only) */
-.brand-bar{ display:flex; align-items:center; justify-content:space-between; padding-top:calc(18px + var(--safe-t)); }
-.brand-id{ display:flex; align-items:center; gap:10px; }
-.brand-mark{ width:38px; height:38px; border-radius:11px; background:var(--grad-main); display:flex; align-items:center; justify-content:center; }
-.brand-mark svg{ width:20px; height:20px; }
-.brand-name{ font-family:var(--font-display); font-weight:700; font-size:15px; }
-.brand-tag{ font-size:10.5px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:0.5px; }
-.refresh-pill{
-  display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim);
-  background:var(--surface-2); border:1px solid var(--border); padding:6px 10px; border-radius:100px;
-  font-family:var(--font-mono);
-}
-.refresh-pill .live-dot{ width:6px; height:6px; border-radius:50%; background:var(--good); box-shadow:0 0 0 0 rgba(47,214,155,0.5); animation:livePulse 2s infinite; }
-@keyframes livePulse{ 0%{box-shadow:0 0 0 0 rgba(47,214,155,0.45);} 70%{box-shadow:0 0 0 6px rgba(47,214,155,0);} 100%{box-shadow:0 0 0 0 rgba(47,214,155,0);} }
-
-/* Hero / signature growth ring */
-.hero-ring-wrap{ display:flex; justify-content:center; padding:22px 0 6px; position:relative; }
-.hero-ring{ position:relative; width:216px; height:216px; }
-.hero-ring svg{ width:100%; height:100%; transform:rotate(-90deg); }
-.hero-ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
-.hero-number{ font-family:var(--font-mono); font-weight:700; font-size:34px; letter-spacing:-0.5px; background:linear-gradient(135deg,#fff,#cfd4ee); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.hero-label{ font-size:11px; color:var(--text-dim); margin-top:2px; letter-spacing:0.3px; }
-.hero-delta{ margin-top:6px; font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:100px; }
-.hero-delta.pos{ color:var(--good); background:rgba(47,214,155,0.12); }
-.hero-delta.neg{ color:#FF7A7A; background:rgba(255,122,122,0.12); }
-.hero-delta.flat{ color:var(--text-dim); background:var(--surface-2); }
-
-.top-platform-strip{
-  display:flex; align-items:center; gap:10px; margin:16px 0 6px;
-  background:var(--surface-2); border:1px solid var(--border); border-radius:16px; padding:12px 14px;
-}
-.top-platform-strip .badge{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:1px; color:var(--rose); font-weight:700; }
-.top-platform-strip .name{ font-family:var(--font-display); font-weight:700; font-size:14px; }
-.top-platform-strip .val{ margin-inline-start:auto; font-family:var(--font-mono); font-weight:700; font-size:15px; }
-
-.section-label{ font-family:var(--font-display); font-weight:700; font-size:13.5px; color:var(--text-dim); margin:22px 2px 10px; display:flex; align-items:center; gap:8px; }
-.section-label .line{ flex:1; height:1px; background:var(--border); }
-
-.grid-cards{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.stat-card{
-  position:relative; background:var(--surface-2); border:1px solid var(--border); border-radius:16px; padding:13px 13px 12px;
-  overflow:hidden;
-}
-.stat-card::before{ content:""; position:absolute; inset:0; opacity:0.5; background:var(--card-accent, transparent); mix-blend-mode:overlay; pointer-events:none; }
-.stat-card-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-.platform-icon{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.platform-icon svg{ width:16px; height:16px; }
-.open-btn{
-  width:24px; height:24px; border-radius:8px; border:1px solid var(--border);
-  background:var(--surface-3); display:flex; align-items:center; justify-content:center; color:var(--text-dim);
-  text-decoration:none; flex-shrink:0;
-}
-.open-btn svg{ width:12px; height:12px; }
-.open-btn:active{ transform:scale(0.92); }
-.stat-card-name{ font-size:11.5px; color:var(--text-dim); margin-bottom:3px; }
-.stat-card-val{ font-family:var(--font-mono); font-weight:700; font-size:19px; letter-spacing:-0.3px; }
-.stat-card-delta{ font-size:10.5px; margin-top:5px; font-weight:600; }
-.stat-card-delta.pos{ color:var(--good); }
-.stat-card-delta.neg{ color:#FF7A7A; }
-.stat-card-delta.flat{ color:var(--text-faint); }
-
-.footer-credit{ text-align:center; padding:26px 0 14px; font-size:11.5px; color:var(--text-faint); }
-.footer-credit a{ color:var(--rose); text-decoration:none; font-weight:600; }
-
-/* Weekly */
-.week-table{ background:var(--surface-2); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-.week-row{ display:grid; grid-template-columns:1.3fr 0.9fr 0.9fr 0.9fr; align-items:center; padding:11px 13px; border-bottom:1px solid var(--border-soft); gap:4px; }
-.week-row:last-child{ border-bottom:none; }
-.week-row.head{ background:var(--surface-3); }
-.week-row.head span{ font-size:9.5px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-faint); font-weight:700; }
-.week-plat{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; }
-.week-plat .platform-icon{ width:22px; height:22px; border-radius:7px; }
-.week-plat .platform-icon svg{ width:11px; height:11px; }
-.week-val{ font-family:var(--font-mono); font-size:12.5px; text-align:center; color:var(--text-dim); }
-.week-val.current{ color:var(--text); font-weight:700; }
-.week-new-banner{
-  margin-top:14px; border-radius:16px; padding:16px; background:var(--grad-main); position:relative; overflow:hidden;
-}
-.week-new-banner .lbl{ font-size:11.5px; color:rgba(255,255,255,0.8); font-family:var(--font-mono); letter-spacing:0.4px; }
-.week-new-banner .num{ font-family:var(--font-display); font-weight:800; font-size:28px; color:#fff; margin-top:4px; }
-
-/* Monthly accordion */
-.month-item{ background:var(--surface-2); border:1px solid var(--border); border-radius:16px; margin-bottom:10px; overflow:hidden; }
-.month-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 15px; cursor:pointer; }
-.month-name{ font-family:var(--font-display); font-weight:700; font-size:14.5px; }
-.month-total{ font-family:var(--font-mono); font-size:12px; color:var(--text-dim); margin-top:2px; }
-.month-chevron{ width:20px; height:20px; color:var(--text-dim); transition:transform 0.25s ease; flex-shrink:0; }
-.month-item.open .month-chevron{ transform:rotate(180deg); }
-.month-body{ max-height:0; overflow:hidden; transition:max-height 0.3s ease; }
-.month-item.open .month-body{ max-height:600px; }
-.month-body-inner{ padding:0 15px 14px; display:flex; flex-direction:column; gap:8px; }
-.month-plat-row{ display:flex; align-items:center; gap:9px; font-size:12.5px; }
-.month-plat-row .name{ flex:1; color:var(--text-dim); }
-.month-plat-row .val{ font-family:var(--font-mono); font-weight:600; }
-.month-plat-row .chg{ font-family:var(--font-mono); font-size:11px; min-width:52px; text-align:end; }
-
-/* Trends */
-.select-row{ display:flex; gap:8px; overflow-x:auto; padding:4px 0 14px; scrollbar-width:none; }
-.select-row::-webkit-scrollbar{ display:none; }
-.chip{
-  flex-shrink:0; padding:9px 15px; border-radius:100px; font-size:12.5px; font-weight:600;
-  background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
-}
-.chip.active{ background:var(--grad-main); color:#fff; border-color:transparent; }
-.chart-card{ background:var(--surface-2); border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:16px; }
-.chart-card-title{ font-family:var(--font-display); font-weight:700; font-size:14px; margin-bottom:12px; }
-.chart-wrap{ position:relative; height:190px; }
-.legend-list{ display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:14px; }
-.legend-item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim); }
-.legend-dot{ width:8px; height:8px; border-radius:50%; }
-
-/* Tests */
-.test-tabs{ display:flex; gap:8px; margin:4px 0 16px; }
-.test-tab{ flex:1; text-align:center; padding:9px 0; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer; }
-.test-tab.active{ background:var(--grad-main); color:#fff; border-color:transparent; }
-.exam-group{ margin-bottom:16px; }
-.exam-group-title{ font-family:var(--font-display); font-weight:700; font-size:14.5px; margin-bottom:8px; padding-left:2px; }
-.exam-entry{
-  background:var(--surface-2); border:1px solid var(--border); border-radius:15px; padding:12px 14px; margin-bottom:8px;
-  display:flex; align-items:center; gap:12px;
-}
-.exam-entry.status-ongoing{ border-color:rgba(47,214,155,0.5); box-shadow:0 0 0 1px rgba(47,214,155,0.15) inset; }
-.exam-entry.status-upcoming{ border-color:rgba(255,32,78,0.35); }
-.exam-date-block{ text-align:center; min-width:46px; }
-.exam-date-block .d{ font-family:var(--font-mono); font-weight:700; font-size:17px; line-height:1; }
-.exam-date-block .m{ font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
-.exam-info{ flex:1; min-width:0; }
-.exam-sub{ font-size:12px; font-weight:600; }
-.exam-range{ font-size:10.5px; color:var(--text-faint); margin-top:2px; }
-.exam-status{ flex-shrink:0; font-size:9.5px; font-weight:700; padding:5px 9px; border-radius:100px; text-align:center; letter-spacing:0.3px; white-space:nowrap; }
-.exam-status.past{ background:var(--surface-3); color:var(--text-faint); }
-.exam-status.upcoming{ background:rgba(255,32,78,0.14); color:var(--rose); }
-.exam-status.ongoing{ background:rgba(47,214,155,0.14); color:var(--good); }
-.exam-status.tba{ background:rgba(255,176,32,0.14); color:var(--warn); }
-
-/* Results coming soon */
-.results-banner{ background:var(--grad-main); border-radius:18px; padding:20px; margin-top:6px; position:relative; overflow:hidden; }
-.results-banner-title{ font-family:var(--font-display); font-weight:800; font-size:18px; color:#fff; }
-.results-banner-sub{ font-size:12.5px; color:rgba(255,255,255,0.85); margin-top:6px; line-height:1.6; }
-.results-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
-.results-chip{
-  background:var(--surface-2); border:1px dashed var(--border); border-radius:14px; padding:16px 10px; text-align:center;
-  opacity:0.6;
-}
-.results-chip .rname{ font-family:var(--font-display); font-weight:700; font-size:14px; }
-.results-chip .rsoon{ font-size:9.5px; margin-top:6px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.5px; font-family:var(--font-mono); }
-
-/* Tab bar */
-#tabbar{
-  position:relative; z-index:5; display:flex; overflow-x:auto; scrollbar-width:none;
-  background:rgba(15,20,48,0.92); backdrop-filter:blur(16px);
-  border-top:1px solid var(--border);
-  padding-bottom:var(--safe-b);
-}
-#tabbar::-webkit-scrollbar{ display:none; }
-.tab-btn{
-  flex:1 0 auto; min-width:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
-  padding:11px 4px 9px; background:none; border:none; color:var(--text-faint); font-family:var(--font-body);
-  font-size:9.5px; font-weight:600; cursor:pointer;
-}
-.tab-btn svg{ width:21px; height:21px; }
-.tab-btn.active{ color:var(--rose); }
-.tab-btn .tdot{ width:3px; height:3px; border-radius:50%; background:var(--rose); opacity:0; margin-top:1px; }
-.tab-btn.active .tdot{ opacity:1; }
-
-.skeleton{ background:linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%); background-size:400% 100%; animation:shimmer 1.4s infinite; border-radius:10px; }
-@keyframes shimmer{ 0%{background-position:100% 0;} 100%{background-position:-100% 0;} }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#00224D" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Chaajao" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no, email=no, address=no" />
+  <title>Chaajao Analytics</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{
+      --navy:#00224D;
+      --plum:#5D0E41;
+      --crimson:#A0153E;
+      --rose:#FF204E;
+      --bg:#f4f6fb;
+      --card:#ffffff;
+      --text:#122033;
+      --muted:#6d7788;
+      --line:#e7ebf3;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#dc2626;
+      --shadow: 0 12px 30px rgba(0,0,0,.08);
+      --radius: 24px;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;margin:0;overflow:hidden;background:linear-gradient(180deg,#081225 0%, #eef2f8 28%, #e9edf6 100%);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text);touch-action:manipulation}
+    body{overscroll-behavior:none}
+    a{color:inherit;text-decoration:none}
+    button,input,select{font:inherit}
+    .shell{
+      width:min(430px,100vw);
+      height:100vh;
+      margin:0 auto;
+      position:relative;
+      background:linear-gradient(180deg,#f8fafc 0%, #f3f6fb 100%);
+      box-shadow:0 0 0 1px rgba(255,255,255,.4), 0 20px 60px rgba(0,0,0,.18);
+      overflow:hidden;
+    }
+    .app{
+      height:100%;
+      padding-top:calc(14px + var(--safe-top));
+      padding-bottom:calc(74px + var(--safe-bottom));
+      display:flex;flex-direction:column;
+    }
+    .topbar{
+      padding:0 16px 10px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:12px;min-width:0;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:16px;
+      background:radial-gradient(circle at 30% 28%, rgba(255,255,255,.95) 0 8%, transparent 9%), linear-gradient(145deg,var(--rose),var(--crimson) 60%, var(--plum));
+      box-shadow:0 10px 24px rgba(160,21,62,.35);
+      position:relative;overflow:hidden;flex:0 0 auto;
+    }
+    .logo:before,.logo:after{
+      content:"";position:absolute;inset:auto;
+    }
+    .logo:before{
+      width:16px;height:16px;border-radius:50%;background:#fff;left:16px;top:13px;opacity:.9;
+    }
+    .logo:after{
+      width:22px;height:22px;left:11px;top:18px;border:4px solid rgba(255,255,255,.95);border-top-color:transparent;border-left-color:transparent;transform:rotate(-35deg);border-radius:50%;
+    }
+    .brand h1{font-size:16px;line-height:1.1;margin:0;color:#fff;font-weight:800;letter-spacing:.2px}
+    .brand p{font-size:11px;margin:2px 0 0;color:rgba(255,255,255,.72)}
+    .hero{
+      margin:0 16px 12px;
+      background:linear-gradient(135deg, #001935 0%, #3f0b2f 46%, #7f1030 78%, #ff234d 120%);
+      border-radius:28px;
+      padding:16px;
+      color:#fff;
+      box-shadow:var(--shadow);
+      position:relative;overflow:hidden;
+    }
+    .hero:after{
+      content:"";position:absolute;inset:-40% -20% auto auto;width:180px;height:180px;background:radial-gradient(circle, rgba(255,255,255,.22) 0, transparent 65%);filter:blur(2px);
+      animation:floatGlow 7s ease-in-out infinite;
+    }
+    @keyframes floatGlow{50%{transform:translate(-18px,10px) scale(1.08)}}
+    .hero-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:relative;z-index:1}
+    .hero h2{margin:0;font-size:19px;line-height:1.1}
+    .hero .sub{margin:8px 0 0;font-size:12px;color:rgba(255,255,255,.82);line-height:1.45}
+    .chipline{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .chip{
+      font-size:11px;padding:7px 10px;border-radius:999px;
+      background:rgba(255,255,255,.12);backdrop-filter:blur(12px);
+      border:1px solid rgba(255,255,255,.14)
+    }
+    .content{flex:1;overflow:auto;padding:0 16px 10px;scrollbar-width:none}
+    .content::-webkit-scrollbar{display:none}
+    .screen{display:none;animation:fadeIn .22s ease}
+    .screen.active{display:block}
+    @keyframes fadeIn{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .section-title{
+      display:flex;align-items:center;justify-content:space-between;margin:10px 0 10px;
+    }
+    .section-title h3{margin:0;font-size:14px;letter-spacing:.2px}
+    .section-title small{color:var(--muted);font-size:11px}
+    .grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;
+    }
+    .card{
+      background:var(--card);border:1px solid rgba(224,229,238,.85);border-radius:22px;
+      box-shadow:0 6px 22px rgba(21,33,61,.06);padding:12px;position:relative;overflow:hidden;
+    }
+    .metric{
+      font-size:22px;font-weight:850;line-height:1;margin-top:8px;
+      letter-spacing:-.4px;
+    }
+    .label{font-size:11px;color:var(--muted);line-height:1.25}
+    .delta{font-size:11px;font-weight:700;margin-top:6px}
+    .delta.up{color:var(--ok)} .delta.down{color:var(--bad)} .delta.flat{color:var(--muted)}
+    .mini-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .platform-dot{width:12px;height:12px;border-radius:50%}
+    .open-btn{
+      width:30px;height:30px;border-radius:10px;border:1px solid #e4e8f1;background:#f8fafc;color:#334155;
+      display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;cursor:pointer;
+    }
+    .open-btn:active{transform:scale(.97)}
+    .open-btn svg{width:14px;height:14px}
+    .tabbar{
+      position:absolute;left:0;right:0;bottom:0;padding:10px 10px calc(10px + var(--safe-bottom));
+      background:linear-gradient(180deg, rgba(248,250,252,.12), rgba(248,250,252,.92) 18%, #f8fafc);
+      backdrop-filter:blur(18px);
+      border-top:1px solid rgba(233,237,245,.8);
+    }
+    .tabs{display:flex;gap:8px;overflow:auto;scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{
+      border:none;background:#fff;color:#334155;padding:10px 12px;border-radius:14px;white-space:nowrap;
+      box-shadow:0 6px 14px rgba(15,23,42,.06);font-size:12px;cursor:pointer;border:1px solid transparent;
+      flex:0 0 auto
+    }
+    .tab.active{background:linear-gradient(135deg,var(--navy),var(--plum));color:#fff;border-color:transparent}
+    .banner{
+      margin:0 16px 10px;padding:10px 12px;border-radius:16px;font-size:12px;font-weight:700;
+      display:none;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .banner.offline{display:flex;background:#fff3cd;color:#7a5b00;border:1px solid #ffe08a}
+    .banner.error{display:flex;background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+    .btn{
+      border:none;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer;
+      background:linear-gradient(135deg,var(--rose),var(--crimson));color:#fff;
+    }
+    .muted{color:var(--muted)}
+    .platform-list{display:grid;gap:10px}
+    .platform-item{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:12px;border-radius:20px;background:#fff;border:1px solid #e8edf6;box-shadow:0 6px 18px rgba(21,33,61,.05)
+    }
+    .platform-name{font-size:13px;font-weight:800}
+    .platform-link{font-size:11px;color:var(--muted);margin-top:3px;word-break:break-word}
+    .bar{
+      height:10px;background:#edf1f8;border-radius:999px;overflow:hidden;margin-top:10px
+    }
+    .bar > div{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--navy),var(--plum),var(--crimson),var(--rose))}
+    .accordion{display:grid;gap:10px}
+    details{
+      background:#fff;border:1px solid #e7ebf3;border-radius:20px;padding:10px 12px;box-shadow:0 6px 18px rgba(21,33,61,.05)
+    }
+    summary{list-style:none;cursor:pointer;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:space-between}
+    summary::-webkit-details-marker{display:none}
+    .month-grid{display:grid;gap:8px;margin-top:10px}
+    .month-row{
+      display:grid;grid-template-columns:1.2fr .9fr .9fr .9fr;gap:6px;font-size:11px;align-items:center
+    }
+    .month-row div{padding:8px 6px;border-radius:12px;background:#f8fafc}
+    .chart-box{background:#fff;border:1px solid #e7ebf3;border-radius:22px;padding:12px;box-shadow:0 6px 18px rgba(21,33,61,.05)}
+    canvas{max-width:100%}
+    .select{
+      width:100%;border:1px solid #d9e0ec;border-radius:14px;padding:12px;background:#fff;font-size:16px;color:#111827
+    }
+    .tests{display:grid;gap:10px}
+    .exam{
+      background:#fff;border:1px solid #e7ebf3;border-radius:22px;padding:12px;box-shadow:0 6px 18px rgba(21,33,61,.05)
+    }
+    .exam h4{margin:0 0 8px;font-size:14px}
+    .date-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:800;margin:4px 6px 0 0}
+    .past{background:#eff6ff;color:#1d4ed8}
+    .soon{background:#fff1f2;color:#be123c}
+    .now{background:#ecfdf5;color:#15803d}
+    .soon-muted{background:#f1f5f9;color:#64748b}
+    .footer{
+      padding:10px 16px 0;
+      text-align:center;font-size:11px;color:var(--muted)
+    }
+    .footer a{color:var(--navy);font-weight:800}
+    .loading,.error-screen{
+      position:absolute;inset:0;background:linear-gradient(180deg,#061126,#0d1630 45%,#eef2f8 45%,#eef2f8);
+      display:flex;align-items:center;justify-content:center;z-index:50;padding:24px
+    }
+    .loader-card{
+      width:min(340px,100%);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+      color:#fff;border-radius:30px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.22);backdrop-filter:blur(18px)
+    }
+    .pulse{
+      width:78px;height:78px;margin:0 auto 16px;border-radius:26px;background:linear-gradient(135deg,var(--rose),var(--crimson),var(--plum),var(--navy));
+      position:relative;overflow:hidden
+    }
+    .pulse:before{
+      content:"";position:absolute;inset:-30%;background:conic-gradient(from 90deg, transparent, rgba(255,255,255,.9), transparent 40%);
+      animation:spin 1.2s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .skeleton{
+      margin-top:14px;display:grid;gap:10px
+    }
+    .sk{height:12px;border-radius:999px;background:rgba(255,255,255,.12)}
+    .sk.w80{width:80%}.sk.w60{width:60%}.sk.w45{width:45%}
+    .center-note{padding:24px;text-align:center}
+    .coming{
+      background:#fff;border:1px solid #e7ebf3;border-radius:22px;padding:16px;display:grid;gap:10px;text-align:center
+    }
+    .chip-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+    .disabled-chip{padding:10px 12px;border-radius:999px;background:#eef2f7;color:#64748b;font-size:12px;font-weight:800}
+    @media (prefers-reduced-motion: reduce){
+      *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+    }
+  </style>
 </head>
 <body>
-
-<div id="splash">
-  <div class="splash-mark" id="splashMark"></div>
-  <div class="splash-title">Chaajao Analytics</div>
-  <div class="splash-sub">GROWTH, TRACKED.</div>
-  <div class="splash-dots"><span></span><span></span><span></span></div>
-</div>
-
-<div id="error-screen">
-  <div class="error-icon" id="errorIcon"></div>
-  <div class="error-title">Data load nahi ho saka</div>
-  <div class="error-body">Internet check karein ya thodi der baad dobara koshish karein. Agar internet theek hai tou Google Sheet tak rasai check karein.</div>
-  <button class="retry-btn" id="retryBtn">Dobara Try Karein</button>
-</div>
-
-<div class="app-shell">
-  <div id="app" hidden>
-    <div id="offline-banner"><span class="dot"></span><span id="offlineText">Internet nahi hai — purana data dikha rahe hain</span></div>
-
-    <main id="pages">
-      <!-- OVERVIEW -->
-      <section class="page active" id="page-overview">
-        <div class="brand-bar">
-          <div class="brand-id">
-            <div class="brand-mark" id="brandMarkOverview"></div>
-            <div>
-              <div class="brand-name">Chaajao Analytics</div>
-              <div class="brand-tag">SOCIAL GROWTH DASHBOARD</div>
-            </div>
-          </div>
-          <div class="refresh-pill"><span class="live-dot"></span><span id="lastUpdated">--</span></div>
+  <div class="shell">
+    <div id="loading" class="loading">
+      <div class="loader-card">
+        <div class="pulse"></div>
+        <div style="font-size:18px;font-weight:900">Chaajao Analytics</div>
+        <div style="margin-top:6px;color:rgba(255,255,255,.75);font-size:12px">Data load ho rahi hai...</div>
+        <div class="skeleton">
+          <div class="sk w80"></div>
+          <div class="sk w60"></div>
+          <div class="sk w45"></div>
         </div>
+      </div>
+    </div>
 
-        <div class="hero-ring-wrap">
-          <div class="hero-ring">
-            <svg viewBox="0 0 216 216" id="heroRingSvg">
-              <circle cx="108" cy="108" r="94" fill="none" stroke="var(--surface-3)" stroke-width="12"/>
-              <circle cx="108" cy="108" r="94" fill="none" id="heroRingProgress" stroke="url(#ringGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="590" stroke-dashoffset="590"/>
-              <defs>
-                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#00224D"/>
-                  <stop offset="35%" stop-color="#5D0E41"/>
-                  <stop offset="68%" stop-color="#A0153E"/>
-                  <stop offset="100%" stop-color="#FF204E"/>
-                </linearGradient>
-              </defs>
-            </svg>
-            <div class="hero-ring-center">
-              <div class="hero-number" id="heroTotal">0</div>
-              <div class="hero-label">Total Community</div>
-              <div class="hero-delta flat" id="heroDelta">Is hafte --</div>
+    <div id="errorScreen" class="error-screen" style="display:none">
+      <div class="loader-card" style="background:#fff;color:#111827;border-color:#e7ebf3">
+        <div class="pulse" style="margin-bottom:14px"></div>
+        <div style="font-size:18px;font-weight:900;color:#111827">Kuch masla aa gaya</div>
+        <div style="margin-top:6px;color:#64748b;font-size:12px">Data fetch nahi ho saka. Dobara try karein.</div>
+        <button class="btn" id="retryBtn" style="margin-top:16px">Dobara Try Karein</button>
+      </div>
+    </div>
+
+    <div class="app" id="app" style="display:none">
+      <div class="topbar" style="background:transparent">
+        <div class="brand">
+          <div class="logo"></div>
+          <div>
+            <h1>Chaajao</h1>
+            <p>Analytics dashboard</p>
+          </div>
+        </div>
+        <div style="text-align:right;color:#fff">
+          <div style="font-size:11px;opacity:.75">Last refresh</div>
+          <div id="lastRefresh" style="font-size:12px;font-weight:800">—</div>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="hero-row">
+          <div>
+            <h2>Social growth aur tests ek jagah</h2>
+            <p class="sub">Weekly followers, monthly change, charts, test dates aur upcoming results ka compact mobile dashboard.</p>
+            <div class="chipline">
+              <span class="chip" id="communityChip">Community —</span>
+              <span class="chip" id="topChip">Top platform —</span>
+              <span class="chip" id="weekChip">Is hafte —</span>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="top-platform-strip" id="topPlatformStrip"></div>
+      <div id="bannerOffline" class="banner offline">Internet nahi hai / offline hai</div>
+      <div id="bannerError" class="banner error">
+        <span>Data refresh fail hua.</span>
+        <button class="btn" id="inlineRetry">Dobara Try Karein</button>
+      </div>
 
-        <div class="section-label"><span>Sab Platforms</span><span class="line"></span></div>
-        <div class="grid-cards" id="overviewGrid"></div>
+      <div class="content">
+        <section id="overview" class="screen active">
+          <div class="section-title"><h3>Overview</h3><small>Current snapshot</small></div>
+          <div class="grid" id="overviewGrid"></div>
+        </section>
 
-        <div class="footer-credit">Developed by <a href="https://www.linkedin.com/in/usmankhan07/" target="_blank" rel="noopener">Usman Khan</a></div>
-      </section>
+        <section id="weekly" class="screen">
+          <div class="section-title"><h3>Weekly</h3><small>Last 3 weeks</small></div>
+          <div class="card" style="margin-bottom:10px">
+            <div class="mini-row">
+              <div>
+                <div class="label">Is hafte total naye followers</div>
+                <div class="metric" id="weeklyTotal">—</div>
+              </div>
+              <div class="platform-dot" style="background:linear-gradient(135deg,var(--rose),var(--crimson))"></div>
+            </div>
+          </div>
+          <div class="platform-list" id="weeklyList"></div>
+        </section>
 
-      <!-- WEEKLY -->
-      <section class="page" id="page-weekly">
-        <div class="page-header">
-          <div class="page-eyebrow">Hafte ba hafte</div>
-          <div class="page-title">Weekly</div>
-          <div class="page-desc">Aakhri 3 hafton ka platform-wise muwazna (comparison).</div>
-        </div>
-        <div id="weeklyContent"></div>
-        <div class="footer-credit">Developed by <a href="https://www.linkedin.com/in/usmankhan07/" target="_blank" rel="noopener">Usman Khan</a></div>
-      </section>
+        <section id="monthly" class="screen">
+          <div class="section-title"><h3>Monthly</h3><small>Month by month</small></div>
+          <div class="accordion" id="monthlyAcc"></div>
+        </section>
 
-      <!-- MONTHLY -->
-      <section class="page" id="page-monthly">
-        <div class="page-header">
-          <div class="page-eyebrow">Mahina ba mahina</div>
-          <div class="page-title">Monthly</div>
-          <div class="page-desc">Har mahine ka breakdown — tap karke expand karein.</div>
-        </div>
-        <div id="monthlyContent"></div>
-        <div class="footer-credit">Developed by <a href="https://www.linkedin.com/in/usmankhan07/" target="_blank" rel="noopener">Usman Khan</a></div>
-      </section>
+        <section id="trends" class="screen">
+          <div class="section-title"><h3>Trends</h3><small>Line + distribution</small></div>
+          <div class="chart-box" style="margin-bottom:10px">
+            <label class="label" for="trendSelect">Platform select karein</label>
+            <select id="trendSelect" class="select"></select>
+            <div style="height:250px;margin-top:10px"><canvas id="lineChart"></canvas></div>
+          </div>
+          <div class="chart-box">
+            <div class="label" style="margin-bottom:8px">Latest distribution</div>
+            <div style="height:240px"><canvas id="pieChart"></canvas></div>
+          </div>
+        </section>
 
-      <!-- TRENDS -->
-      <section class="page" id="page-trends">
-        <div class="page-header">
-          <div class="page-eyebrow">Growth history</div>
-          <div class="page-title">Trends</div>
-          <div class="page-desc">Platform chunein aur uski growth ka trend dekhein.</div>
-        </div>
-        <div class="select-row" id="trendChips"></div>
-        <div class="chart-card">
-          <div class="chart-card-title" id="trendLineTitle">Growth Trend</div>
-          <div class="chart-wrap"><canvas id="trendLineChart"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-title">Is Hafte Distribution</div>
-          <div class="chart-wrap"><canvas id="trendDoughnutChart"></canvas></div>
-          <div class="legend-list" id="doughnutLegend"></div>
-        </div>
-        <div class="footer-credit">Developed by <a href="https://www.linkedin.com/in/usmankhan07/" target="_blank" rel="noopener">Usman Khan</a></div>
-      </section>
+        <section id="tests" class="screen">
+          <div class="section-title"><h3>Tests</h3><small>Admissions timeline</small></div>
+          <div class="tests" id="testsList"></div>
+        </section>
 
-      <!-- TESTS -->
-      <section class="page" id="page-tests">
-        <div class="page-header">
-          <div class="page-eyebrow">Admission calendar</div>
-          <div class="page-title">Tests</div>
-          <div class="page-desc">University aur entry test dates — 2021 se 2026 tak.</div>
-        </div>
-        <div class="test-tabs">
-          <div class="test-tab active" data-filter="upcoming">Aane Wale</div>
-          <div class="test-tab" data-filter="all">Sab</div>
-          <div class="test-tab" data-filter="past">Guzar Chuke</div>
-        </div>
-        <div id="testsContent"></div>
-        <div class="footer-credit">Developed by <a href="https://www.linkedin.com/in/usmankhan07/" target="_blank" rel="noopener">Usman Khan</a></div>
-      </section>
+        <section id="results" class="screen">
+          <div class="section-title"><h3>Chaajao Results</h3><small>Coming soon</small></div>
+          <div class="coming">
+            <div class="center-note">
+              <div style="font-size:26px;font-weight:900;color:var(--navy)">Coming Soon</div>
+              <div class="muted" style="margin-top:6px;font-size:12px">Results portal jald hi launch hoga. Abhi development chal raha hai.</div>
+            </div>
+            <div class="chip-grid">
+              <div class="disabled-chip">MDCAT • Coming Soon</div>
+              <div class="disabled-chip">ECAT • Coming Soon</div>
+              <div class="disabled-chip">BCAT • Coming Soon</div>
+              <div class="disabled-chip">SAT • Coming Soon</div>
+              <div class="disabled-chip">Inter • Coming Soon</div>
+              <div class="disabled-chip">Matric • Coming Soon</div>
+            </div>
+            <div class="muted" style="font-size:11px">Future data source: Google Sheet integration planned.</div>
+          </div>
+        </section>
 
-      <!-- RESULTS -->
-      <section class="page" id="page-results">
-        <div class="page-header">
-          <div class="page-eyebrow">Chaajao Results</div>
-          <div class="page-title">Results</div>
-          <div class="page-desc">Test aur board results ek jagah — jald aa raha hai.</div>
-        </div>
-        <div class="results-banner">
-          <div class="results-banner-title">Results Portal — Coming Soon</div>
-          <div class="results-banner-sub">Ye section abhi development mein hai. Jald hi aap yahin se apne MDCAT, ECAT, BCAT, SAT, Inter aur Matric results check kar sakenge.</div>
-        </div>
-        <div class="results-grid" id="resultsGrid"></div>
-        <div class="footer-credit">Developed by <a href="https://www.linkedin.com/in/usmankhan07/" target="_blank" rel="noopener">Usman Khan</a></div>
-      </section>
-    </main>
+        <div class="footer">Developed by <a href="https://www.linkedin.com/in/usmankhan07/" target="_blank" rel="noopener">Usman Khan</a></div>
+      </div>
 
-    <nav id="tabbar"></nav>
+      <div class="tabbar">
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-target="overview">Overview</button>
+          <button class="tab" data-target="weekly">Weekly</button>
+          <button class="tab" data-target="monthly">Monthly</button>
+          <button class="tab" data-target="trends">Trends</button>
+          <button class="tab" data-target="tests">Tests</button>
+          <button class="tab" data-target="results">Results</button>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
 
 <script>
-/* =========================================================================
-   CHAAJAO ANALYTICS — app logic
-   ========================================================================= */
-
-/* ---------- Icon library (original simple glyphs, not traced logos) ---------- */
-const ICONS = {
-  brandMark: `<svg viewBox="0 0 24 24" fill="none"><path d="M4 17L9 11L13 14L20 6" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 6H20V11" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  error: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#FF204E" stroke-width="2"/><path d="M12 8v5" stroke="#FF204E" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1" fill="#FF204E"/></svg>`,
-  open: `<svg viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7V15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  chevron: `<svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  tabs: {
-    overview: `<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="2" stroke="currentColor" stroke-width="2"/><rect x="13" y="3" width="8" height="8" rx="2" stroke="currentColor" stroke-width="2"/><rect x="3" y="13" width="8" height="8" rx="2" stroke="currentColor" stroke-width="2"/><rect x="13" y="13" width="8" height="8" rx="2" stroke="currentColor" stroke-width="2"/></svg>`,
-    weekly: `<svg viewBox="0 0 24 24" fill="none"><path d="M4 20V13M12 20V7M20 20V10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`,
-    monthly: `<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" stroke-width="2"/><path d="M3 10H21" stroke="currentColor" stroke-width="2"/><path d="M8 3V6M16 3V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-    trends: `<svg viewBox="0 0 24 24" fill="none"><path d="M4 16L9 10L13 13L20 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 5H20V11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    tests: `<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" stroke-width="2"/><path d="M3 10H21" stroke="currentColor" stroke-width="2"/><path d="M8 14L10.5 16.5L16 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    results: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="5" stroke="currentColor" stroke-width="2"/><path d="M9 13.5L7 21L12 18L17 21L15 13.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-  },
-  platform: {
-    linkedin: `<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="3" height="9" fill="#fff"/><circle cx="5.5" cy="6" r="1.8" fill="#fff"/><path d="M10 10H13V11.5C13.6 10.5 15 10 16.2 10C19 10 20 11.8 20 14.5V19H17V15C17 13.7 16.6 12.8 15.3 12.8C14.3 12.8 13.7 13.5 13.4 14.1C13.3 14.4 13 14.9 13 15.4V19H10V10Z" fill="#fff"/></svg>`,
-    youtube: `<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="4" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M10.5 9.5L15.5 12L10.5 14.5V9.5Z" fill="#fff"/></svg>`,
-    facebook: `<svg viewBox="0 0 24 24" fill="none"><path d="M14 20V13H16.5L17 10H14V8.2C14 7.4 14.3 6.8 15.5 6.8H17V4.1C16.6 4.05 15.6 4 14.5 4C12.1 4 10.5 5.4 10.5 8V10H8V13H10.5V20H14Z" fill="#fff"/></svg>`,
-    instagram: `<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="5" stroke="#fff" stroke-width="1.7"/><circle cx="12" cy="12" r="3.6" stroke="#fff" stroke-width="1.7"/><circle cx="16.7" cy="7.3" r="1.1" fill="#fff"/></svg>`,
-    tiktok: `<svg viewBox="0 0 24 24" fill="none"><path d="M13 4V14.2C13 15.6 11.9 16.7 10.5 16.7C9.1 16.7 8 15.6 8 14.2C8 12.8 9.1 11.7 10.5 11.7C10.7 11.7 10.9 11.72 11 11.76V9.2C10.8 9.17 10.65 9.15 10.5 9.15C7.7 9.15 5.4 11.4 5.4 14.2C5.4 17 7.7 19.25 10.5 19.25C13.3 19.25 15.6 17 15.6 14.2V8.7C16.4 9.3 17.4 9.65 18.5 9.65V7.05C16.6 7.05 15.05 5.65 15.05 4H13Z" fill="#fff"/></svg>`,
-    whatsapp: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 4C7.6 4 4 7.6 4 12C4 13.5 4.4 14.9 5.1 16.1L4 20L8.1 18.9C9.3 19.5 10.6 19.9 12 19.9C16.4 19.9 20 16.3 20 11.9C20 7.5 16.4 4 12 4Z" fill="#fff"/><path d="M9.2 8.6C9 8.6 8.8 8.7 8.7 9C8.5 9.4 8.1 10 8.1 10.9C8.1 11.8 8.7 12.7 8.8 12.8C8.9 12.9 10.1 14.9 12 15.6C13.6 16.2 13.9 16.1 14.2 16C14.6 16 15.3 15.6 15.5 15.2C15.7 14.8 15.7 14.4 15.6 14.3C15.6 14.2 15.4 14.2 15.1 14.05C14.8 13.9 13.6 13.3 13.4 13.2C13.2 13.1 13 13.1 12.9 13.3C12.7 13.6 12.3 14.1 12.1 14.3C12 14.4 11.8 14.4 11.6 14.35C11.3 14.2 10.5 13.9 9.6 13.1C8.9 12.5 8.4 11.7 8.3 11.5C8.2 11.3 8.3 11.15 8.4 11.05C8.5 10.95 8.6 10.8 8.7 10.65C8.85 10.55 8.9 10.4 9 10.25C9.1 10.1 9 9.95 9 9.85C8.9 9.7 8.5 8.6 9.2 8.6Z" fill="#0B0F1F"/></svg>`
-  }
-};
-
-function badge(kind, accent, sizeClass){
-  const icon = ICONS.platform[kind] || '';
-  return `<div class="platform-icon ${sizeClass||''}" style="background:${accent}">${icon}</div>`;
-}
-
-document.getElementById('splashMark').innerHTML = ICONS.brandMark;
-document.getElementById('errorIcon').innerHTML = ICONS.error;
-document.getElementById('brandMarkOverview').innerHTML = ICONS.brandMark;
-
-/* ---------- Config ---------- */
 const SHEET_ID = '1MG7nZhr4L7cORXWL5FTuTPUDn0354bpqlq4RrzZNZQo';
 const SHEET_NAME = 'Weekly Engagment';
 const RANGE = 'A4:K500';
-const REFRESH_MS = 5 * 60 * 1000;
-const CACHE_KEY = 'chaajao_rows_cache_v1';
-
-const PLATFORMS = [
-  { key:'linkedin',   name:'LinkedIn',                icon:'linkedin',  color:'#0A66C2', link:'https://www.linkedin.com/company/chaajao' },
-  { key:'youtube',    name:'YouTube',                 icon:'youtube',   color:'#FF0000', link:'https://www.youtube.com/@Chaajao' },
-  { key:'fb_likes',   name:'Facebook Likes',          icon:'facebook',  color:'#1877F2', link:'https://www.facebook.com/Chaajao.edu' },
-  { key:'fb_follows', name:'Facebook Follows',        icon:'facebook',  color:'#1877F2', link:'https://www.facebook.com/Chaajao.edu' },
-  { key:'instagram',  name:'Instagram',                icon:'instagram', color:'#E1306C', link:'https://www.instagram.com/chaajao__edu/' },
-  { key:'tiktok',     name:'TikTok',                   icon:'tiktok',    color:'#111111', link:'https://www.tiktok.com/@chaajao_edu' },
-  { key:'wa_main',    name:'WhatsApp Channel',         icon:'whatsapp',  color:'#25D366', link:'https://whatsapp.com/channel/0029VaLqFDgFy72BmpzRqb45' },
-  { key:'wa_mdcat',   name:'WhatsApp MDCAT',           icon:'whatsapp',  color:'#059669', link:'https://whatsapp.com/channel/0029VbB7OEF72WTuSLtPfh0f' },
-  { key:'wa_ecat',    name:'WhatsApp ECAT',            icon:'whatsapp',  color:'#3B82F6', link:'https://whatsapp.com/channel/0029VbBED3HHltY2EwNPfU2J' },
-  { key:'wa_bcat',    name:'WhatsApp BCAT',            icon:'whatsapp',  color:'#A78BFA', link:'https://whatsapp.com/channel/0029VbCH5caL7UVZ6UIHvA3J' },
+const PLATFORM_META = [
+  {key:'linkedin', name:'LinkedIn', col:'LinkedIn', url:'https://www.linkedin.com/company/chaajao', color:'#0A66C2'},
+  {key:'youtube', name:'YouTube', col:'YouTube', url:'https://www.youtube.com/@Chaajao', color:'#FF0000'},
+  {key:'facebook_likes', name:'Facebook Likes', col:'Facebook Likes', url:'https://www.facebook.com/Chaajao.edu', color:'#1877F2'},
+  {key:'facebook_follows', name:'Facebook Follows', col:'Facebook Follows', url:'https://www.facebook.com/Chaajao.edu', color:'#1877F2'},
+  {key:'instagram', name:'Instagram', col:'Instagram', url:'https://www.instagram.com/chaajao__edu/', color:'#E1306C'},
+  {key:'tiktok', name:'TikTok', col:'TikTok', url:'https://www.tiktok.com/@chaajao_edu', color:'#111111'},
+  {key:'whatsapp_main', name:'WhatsApp Main', col:'WhatsApp (main channel)', url:'https://whatsapp.com/channel/0029VaLqFDgFy72BmpzRqb45', color:'#25D366'},
+  {key:'whatsapp_mdcat', name:'WhatsApp MDCAT', col:'WhatsApp MDCAT group', url:'https://whatsapp.com/channel/0029VbB7OEF72WTuSLtPfh0f', color:'#059669'},
+  {key:'whatsapp_ecat', name:'WhatsApp ECAT', col:'WhatsApp ECAT group', url:'https://whatsapp.com/channel/0029VbBED3HHltY2EwNPfU2J', color:'#3B82F6'},
+  {key:'whatsapp_bcat', name:'WhatsApp BCAT', col:'WhatsApp BCAT group', url:'https://whatsapp.com/channel/0029VbCH5caL7UVZ6UIHvA3J', color:'#A78BFA'},
 ];
-const COL_ORDER = ['linkedin','youtube','fb_likes','fb_follows','instagram','tiktok','wa_main','wa_mdcat','wa_ecat','wa_bcat'];
-
-/* ---------- Test dates data ---------- */
-function d(s){ return s ? new Date(s+'T00:00:00') : null; }
-const TEST_GROUPS = [
-  { title:'NED University — Round I', entries:[
-    {label:'2021', start:d('2021-09-06'), end:d('2021-09-12')},
-    {label:'2022', start:d('2022-07-30'), end:d('2022-08-03')},
-    {label:'2023', start:d('2023-07-08'), end:d('2023-07-11')},
-    {label:'2024', start:d('2024-05-04'), end:d('2024-05-06')},
-    {label:'2025', start:d('2025-06-11'), end:d('2025-06-15')},
-    {label:'2026', start:d('2026-06-12'), end:d('2026-06-15')},
-  ]},
-  { title:'NED University — Round II', entries:[
-    {label:'2021', start:d('2021-09-25'), end:d('2021-10-04')},
-    {label:'2022', start:d('2022-08-27'), end:d('2022-08-29')},
-    {label:'2023', start:d('2023-08-19'), end:d('2023-08-22')},
-    {label:'2024', start:d('2024-07-05'), end:d('2024-07-07')},
-    {label:'2025', start:d('2025-07-12'), end:d('2025-07-14')},
-    {label:'2026', start:d('2026-07-06'), end:d('2026-07-09')},
-  ]},
-  { title:'IBA Karachi — UG Round II', entries:[
-    {label:'2021 · Test 1', start:d('2021-07-04'), end:null},
-    {label:'2021 · Test 2', start:d('2021-07-25'), end:null},
-    {label:'2022 · Test 1', start:d('2022-07-03'), end:null},
-    {label:'2022 · Test 2', start:d('2022-07-17'), end:null},
-    {label:'2023 · Test 1', start:d('2023-06-25'), end:null},
-    {label:'2023 · Test 2', start:d('2023-07-16'), end:null},
-    {label:'2024 · Test 1', start:d('2024-06-30'), end:null},
-    {label:'2024 · Test 2', start:d('2024-07-21'), end:null},
-    {label:'2025', start:d('2025-06-22'), end:null},
-    {label:'2026', start:d('2026-06-21'), end:null},
-  ]},
-  { title:'Dawood University — DUET', entries:[
-    {label:'2021 · First Test', start:d('2021-09-29'), end:d('2021-09-30')},
-    {label:'2021 · Second Test', start:d('2021-10-24'), end:null},
-    {label:'2022 · First Test', start:d('2022-08-12'), end:null},
-    {label:'2022 · Second Test', start:d('2022-09-15'), end:null},
-    {label:'2023', start:d('2023-08-27'), end:null},
-    {label:'2024', start:d('2024-08-11'), end:null},
-    {label:'2025', start:d('2025-07-20'), end:null},
-    {label:'2026', start:d('2026-07-12'), end:null},
-  ]},
-  { title:'MDCAT (National)', entries:[
-    {label:'2021', start:d('2021-08-30'), end:d('2021-09-30')},
-    {label:'2022', start:d('2022-11-13'), end:null},
-    {label:'2023', start:d('2023-09-10'), end:null},
-    {label:'2024', start:d('2024-09-22'), end:null},
-    {label:'2025', start:d('2025-10-26'), end:null},
-    {label:'2026', start:d('2026-08-16'), end:null},
-  ]},
-  { title:'NUMS MDCAT', entries:[
-    {label:'2021', start:d('2021-10-03'), end:null},
-    {label:'2022', start:d('2022-10-16'), end:null},
-    {label:'2023', start:d('2023-09-03'), end:null},
-    {label:'2024', start:d('2024-09-01'), end:null},
-    {label:'2025', start:d('2025-09-28'), end:null},
-    {label:'2026', start:d('2026-08-23'), end:null},
-  ]},
-  { title:'NTS NAT-VI', entries:[
-    {label:'2024', start:d('2024-06-09'), end:null},
-    {label:'2025', start:d('2025-06-14'), end:null},
-    {label:'2026', start:d('2026-06-14'), end:null},
-  ]},
-  { title:'NTS NAT-VII', entries:[
-    {label:'2024', start:d('2024-07-07'), end:null},
-    {label:'2025', start:d('2025-07-12'), end:null},
-    {label:'2026', start:d('2026-07-12'), end:null},
-  ]},
-  { title:'NTS NAT-VIII', entries:[
-    {label:'2022', start:d('2022-09-04'), end:null},
-    {label:'2025', start:d('2025-08-09'), end:null},
-    {label:'2026', start:d('2026-08-09'), end:null},
-  ]},
-  { title:'Aga Khan University — AKU MBBS', entries:[
-    {label:'2022', start:d('2022-07-24'), end:null},
-    {label:'2023', start:d('2023-08-06'), end:null},
-    {label:'2024', start:d('2024-07-21'), end:null},
-    {label:'2025', start:d('2025-07-20'), end:null},
-    {label:'2026', start:d('2026-07-05'), end:null},
-  ]},
-  { title:'GIKI — UG Admission Test', entries:[
-    {label:'2025', start:d('2025-07-09'), end:d('2025-07-13')},
-    {label:'2026', start:d('2026-07-06'), end:d('2026-07-10')},
-  ]},
-  { title:'PIEAS — Written Test', entries:[
-    {label:'2024', start:d('2024-07-21'), end:null},
-    {label:'2025 · Test 1', start:d('2025-02-23'), end:null},
-    {label:'2025 · Test 2', start:d('2025-04-13'), end:null},
-    {label:'2025 · Test 3', start:d('2025-06-29'), end:null},
-    {label:'2026', start:d('2026-07-12'), end:null},
-  ]},
-  { title:'FAST-NUCES — UG Admission Test', entries:[
-    {label:'2025', start:d('2025-07-07'), end:d('2025-07-18')},
-    {label:'2026', start:d('2026-06-29'), end:d('2026-07-10')},
-  ]},
-  { title:'NUST NET-IV', entries:[
-    {label:'2025 · Islamabad', start:d('2025-06-15'), end:null, note:'onward'},
-    {label:'2025 · Karachi', start:d('2025-07-17'), end:d('2025-07-20')},
-    {label:'2025 · Gilgit', start:d('2025-07-19'), end:d('2025-07-20')},
-    {label:'2025 · Quetta', start:d('2025-07-26'), end:d('2025-07-27')},
-    {label:'2026 · Islamabad', start:d('2026-06-13'), end:null, note:'onward'},
-    {label:'2026 · Karachi', start:d('2026-07-18'), end:d('2026-07-22')},
-    {label:'2026 · Gilgit', start:d('2026-07-18'), end:d('2026-07-20')},
-    {label:'2026 · Quetta', start:d('2026-07-27'), end:d('2026-07-29')},
-  ]},
-  { title:'Bahria University', entries:[
-    {label:'2026 · Islamabad Round I', start:d('2026-06-20'), end:null, note:'onward'},
-    {label:'2026 · Islamabad Round II', start:d('2026-07-25'), end:null, note:'onward'},
-    {label:'2026 · Lahore Round I', start:d('2026-06-20'), end:null, note:'onward'},
-    {label:'2026 · Lahore Round II', start:d('2026-08-01'), end:null, note:'onward'},
-    {label:'2026 · Lahore Round III', start:d('2026-09-05'), end:null, note:'onward'},
-    {label:'2026 · Karachi Test II', start:d('2026-07-27'), end:null, note:'onward'},
-  ]},
-  { title:'CBM / IoBM — Fall Round II Aptitude Test', entries:[
-    {label:'2026 · Test A', start:d('2026-06-20'), end:null},
-    {label:'2026 · Test B', start:d('2026-06-22'), end:null},
-  ]},
-  { title:'SZABIST Karachi — Fall Round II Test', entries:[
-    {label:'2026', start:d('2026-07-27'), end:d('2026-07-30')},
-  ]},
-  { title:'KU-UBIT', entries:[
-    {label:'2026', start:null, end:null, tba:true, tbaText:'October 2026 — Tareekh Jald Aayegi'},
-  ]},
+const EXAMS = [
+  ['NED University — Round I', [['2021','06–12 September 2021'],['2022','30 July – 03 August 2022'],['2023','08–11 July 2023'],['2024','04–06 May 2024'],['2025','11–15 June 2025'],['2026','12–15 June 2026']]],
+  ['NED University — Round II', [['2021','25 September – 04 October 2021'],['2022','27–29 August 2022'],['2023','19–22 August 2023'],['2024','05–07 July 2024'],['2025','12–14 July 2025'],['2026','06–09 July 2026']]],
+  ['IBA Karachi — Undergraduate Round II', [['2021','04 July 2021 & 25 July 2021'],['2022','03 July 2022 & 17 July 2022'],['2023','25 June 2023 & 16 July 2023'],['2024','30 June 2024 & 21 July 2024'],['2025','22 June 2025'],['2026','21 June 2026']]],
+  ['Dawood University — DUET', [['2021','First Test 29–30 September 2021, Second Test 24 October 2021'],['2022','First Test 12 August 2022, Second Test 15 September 2022'],['2023','27 August 2023'],['2024','11 August 2024'],['2025','20 July 2025'],['2026','12 July 2026']]],
+  ['MDCAT', [['2021','30 August – 30 September 2021'],['2022','13 November 2022'],['2023','10 September 2023'],['2024','22 September 2024'],['2025','26 October 2025'],['2026','16 August 2026']]],
+  ['NUMS MDCAT', [['2021','03 October 2021'],['2022','16 October 2022'],['2023','03 September 2023'],['2024','01 September 2024'],['2025','28 September 2025'],['2026','23 August 2026']]],
+  ['NTS NAT-VI', [['2024','09 June 2024'],['2025','14 June 2025'],['2026','14 June 2026']]],
+  ['NTS NAT-VII', [['2024','07 July 2024'],['2025','12 July 2025'],['2026','12 July 2026']]],
+  ['NTS NAT-VIII', [['2022','04 September 2022'],['2025','09 August 2025'],['2026','09 August 2026']]],
+  ['Aga Khan University — AKU MBBS Admission Test', [['2022','24 July 2022'],['2023','06 August 2023'],['2024','21 July 2024'],['2025','20 July 2025'],['2026','05 July 2026']]],
+  ['GIKI — Undergraduate Admission Test', [['2025','09–13 July 2025'],['2026','06–10 July 2026']]],
+  ['PIEAS — Round/Second Written Test', [['2024','21 July 2024'],['2025','13 April 2025'],['2026','12 July 2026']]],
+  ['FAST-NUCES — Undergraduate Admission Test', [['2025','07–18 July 2025'],['2026','29 June – 10 July 2026']]],
+  ['NUST NET-IV', [['2025','Islamabad 15 June 2025 onward · Karachi 17–20 July 2025 · Gilgit 19–20 July 2025 · Quetta 26–27 July 2025'],['2026','Islamabad 13 June 2026 onward · Karachi 18–22 July 2026 · Gilgit 18–20 July 2026 · Quetta 27–29 July 2026']]],
+  ['Bahria University', [['2026','Islamabad Round I — 20 June 2026 onward · Round II — 25 July 2026 onward · Lahore Round I — 20 June 2026 onward · Round II — 01 August 2026 onward · Round III — 05 September 2026 onward · Karachi Test II — 27 July 2026 onward']]],
+  ['CBM / IoBM — Fall Round II Aptitude Test', [['2026','20 June 2026 and 22 June 2026']]],
+  ['SZABIST Karachi — Fall Round II Test', [['2026','27–30 July 2026']]],
+  ['KU-UBIT', [['2026','October 2026 — Tareekh Jald Aayegi']]]
 ];
+const state = {
+  rows: [],
+  dates: [],
+  dataByPlatform: {},
+  charts: { line: null, pie: null },
+  activePlatform: 'LinkedIn'
+};
 
-/* ---------- State ---------- */
-let rows = [];          // [{date:Date, v:{key:num|null}}]
-let selectedTrendPlatform = 'linkedin';
-let lineChart, doughnutChart;
-let refreshTimer = null;
-
-/* ---------- Data fetching & parsing ---------- */
-function gvizDateToJs(raw){
-  if (raw === null || raw === undefined || raw === '') return null;
-  if (typeof raw === 'number'){
-    // Excel/Sheets serial date (epoch 1899-12-30)
-    const ms = Math.round((raw - 25569) * 86400 * 1000);
-    return new Date(ms);
+const $ = s => document.querySelector(s);
+const fmt = n => (n == null || isNaN(n)) ? '—' : new Intl.NumberFormat('en-PK').format(Math.round(n));
+const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
+function parseSheetDate(v){
+  if(v == null || v === '') return null;
+  if(v instanceof Date) return v;
+  if(typeof v === 'number'){
+    return new Date(Math.round((v - 25569) * 86400 * 1000));
   }
-  if (typeof raw === 'string'){
-    const m = raw.match(/Date\((\d+),(\d+),(\d+)/);
-    if (m) return new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3]));
-    const parsed = new Date(raw);
-    if (!isNaN(parsed.getTime())) return parsed;
+  if(typeof v === 'string'){
+    const m = v.match(/Date\((\d+),(\d+),(\d+)\)/);
+    if(m) return new Date(+m[1], +m[2], +m[3]);
+    const d = new Date(v);
+    if(!isNaN(d)) return d;
+    const mm = v.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if(mm){
+      const yy = +mm[3] < 100 ? 2000 + +mm[3] : +mm[3];
+      return new Date(yy, +mm[2]-1, +mm[1]);
+    }
   }
   return null;
 }
-function cellNum(c){
-  if (!c || c.v === null || c.v === undefined || c.v === '') return null;
-  const n = typeof c.v === 'number' ? c.v : parseFloat(c.v);
-  return isNaN(n) ? null : n;
-}
+function openUrl(url){ window.open(url, '_blank', 'noopener'); }
+function deltaClass(v){ return v > 0 ? 'up' : v < 0 ? 'down' : 'flat'; }
+function deltaText(v){ return (v > 0 ? '+' : '') + fmt(v); }
+function safeNumber(v){ return v == null || v === '' || isNaN(+v) ? null : +v; }
 
+function buildUrl(){
+  const enc = encodeURIComponent(`select * where A is not null`);
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(SHEET_NAME)}&range=${encodeURIComponent(RANGE)}&tqx=out:json&tq=${enc}`;
+}
 async function fetchSheet(){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&range=${RANGE}`;
-  const res = await fetch(url, { cache:'no-store' });
-  if (!res.ok) throw new Error('Network response not ok');
-  const text = await res.text();
-  const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
-  const data = JSON.parse(jsonStr);
-  const table = data.table;
-  if (!table || !table.rows) throw new Error('Bad sheet response');
-
-  const out = [];
-  table.rows.forEach(r => {
-    const c = r.c || [];
-    const dateCell = c[0];
-    const jsDate = dateCell ? gvizDateToJs(dateCell.v) : null;
-    if (!jsDate || isNaN(jsDate.getTime())) return;
-    const v = {};
-    COL_ORDER.forEach((key, idx) => { v[key] = cellNum(c[idx+1]); });
-    const hasAny = COL_ORDER.some(k => v[k] !== null);
-    if (!hasAny) return;
-    out.push({ date: jsDate, v });
+  const res = await fetch(buildUrl(), {cache:'no-store'});
+  const txt = await res.text();
+  const match = txt.match(/google\.visualization\.QuerySet\(([\s\S]*?)\);?/);
+  if(!match) throw new Error('Invalid sheet response');
+  const json = JSON.parse(match[1]);
+  const cols = json.table.cols.map(c => c.label || c.id || '');
+  const rows = json.table.rows.map(r => {
+    const obj = {};
+    cols.forEach((c,i)=> obj[c] = r.c[i] ? (r.c[i].v ?? null) : null);
+    return obj;
   });
-  out.sort((a,b) => a.date - b.date);
-  return out;
+  return rows;
 }
-
-function saveCache(data){
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data.map(r => ({ date:r.date.toISOString(), v:r.v })))); } catch(e){}
+function preprocess(rows){
+  const parsed = rows.map(r => {
+    const date = parseSheetDate(r['Date'] ?? r[Object.keys(r)[0]]);
+    const o = { date };
+    PLATFORM_META.forEach(p => o[p.key] = safeNumber(r[p.col]));
+    return o;
+  }).filter(r => r.date);
+  parsed.sort((a,b)=>a.date-b.date);
+  state.rows = parsed;
+  state.dates = parsed.map(r => r.date);
+  PLATFORM_META.forEach(p => state.dataByPlatform[p.key] = parsed.map(r => r[p.key]));
 }
-function loadCache(){
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const arr = JSON.parse(raw);
-    return arr.map(r => ({ date:new Date(r.date), v:r.v }));
-  } catch(e){ return null; }
+function latestIndex(){ return state.rows.length ? state.rows.length-1 : -1; }
+function latestRow(){ return state.rows[latestIndex()] || null; }
+function prevRow(offset=1){ return state.rows[latestIndex()-offset] || null; }
+function calcChange(key, a, b){ if(a == null || b == null) return null; return a-b; }
+function totalLatest(){
+  const r = latestRow();
+  if(!r) return null;
+  return PLATFORM_META.reduce((s,p)=>s + (r[p.key] || 0), 0);
 }
-
-/* ---------- Helpers ---------- */
-function sumRow(v){ return COL_ORDER.reduce((s,k) => s + (v[k]||0), 0); }
-function fmtNum(n){ return Math.round(n).toLocaleString('en-US'); }
-function fmtDeltaText(delta){
-  if (delta === null || delta === undefined) return '--';
-  if (delta > 0) return `+${fmtNum(delta)}`;
-  if (delta < 0) return `${fmtNum(delta)}`;
-  return '0';
+function weeklyTotalChange(){
+  const a = latestRow(), b = prevRow(1);
+  if(!a || !b) return null;
+  return PLATFORM_META.reduce((s,p)=>s + ((a[p.key]||0)-(b[p.key]||0)), 0);
 }
-function deltaClass(delta){ if (delta > 0) return 'pos'; if (delta < 0) return 'neg'; return 'flat'; }
-const MONTHS_UR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-function fmtDate(dt){ return `${dt.getDate()} ${MONTHS_UR[dt.getMonth()]} ${dt.getFullYear()}`; }
-function monthKey(dt){ return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`; }
-
-/* ---------- Render: Overview ---------- */
 function renderOverview(){
-  if (rows.length === 0) return;
-  const latest = rows[rows.length-1];
-  const prev = rows.length > 1 ? rows[rows.length-2] : null;
-  const total = sumRow(latest.v);
-  const prevTotal = prev ? sumRow(prev.v) : null;
-  const delta = prevTotal !== null ? total - prevTotal : null;
-
-  animateNumber(document.getElementById('heroTotal'), total);
-  document.getElementById('lastUpdated').textContent = `Update: ${fmtDate(latest.date)}`;
-
-  const heroDeltaEl = document.getElementById('heroDelta');
-  heroDeltaEl.className = 'hero-delta ' + deltaClass(delta || 0);
-  heroDeltaEl.textContent = delta === null ? 'Is hafte -- ' : `Is hafte ${fmtDeltaText(delta)}`;
-
-  // ring progress based on this-week delta relative to a soft scale
-  const ring = document.getElementById('heroRingProgress');
-  const circumference = 590;
-  let pct = 0.15;
-  if (delta !== null && prevTotal){
-    pct = Math.max(0.08, Math.min(1, 0.5 + (delta / Math.max(prevTotal*0.02, 1)) * 0.25));
-  }
-  requestAnimationFrame(() => { ring.style.transition = 'stroke-dashoffset 1.1s ease'; ring.style.strokeDashoffset = circumference * (1 - pct); });
-
-  // top platform
-  let topKey = COL_ORDER[0], topVal = -1;
-  COL_ORDER.forEach(k => { const val = latest.v[k] || 0; if (val > topVal){ topVal = val; topKey = k; } });
-  const topP = PLATFORMS.find(p => p.key === topKey);
-  document.getElementById('topPlatformStrip').innerHTML = `
-    ${badge(topP.icon, topP.color)}
-    <div><div class="badge">TOP PLATFORM</div><div class="name">${topP.name}</div></div>
-    <div class="val">${fmtNum(topVal)}</div>
-  `;
-
-  const grid = document.getElementById('overviewGrid');
-  grid.innerHTML = PLATFORMS.map(p => {
-    const val = latest.v[p.key];
-    const pVal = prev ? prev.v[p.key] : null;
-    const chg = (val !== null && pVal !== null) ? val - pVal : null;
-    return `
-    <div class="stat-card">
-      <div class="stat-card-top">
-        ${badge(p.icon, p.color)}
-        <a class="open-btn" href="${p.link}" target="_blank" rel="noopener" aria-label="Open ${p.name}">${ICONS.open}</a>
-      </div>
-      <div class="stat-card-name">${p.name}</div>
-      <div class="stat-card-val">${val !== null ? fmtNum(val) : '—'}</div>
-      <div class="stat-card-delta ${deltaClass(chg||0)}">${chg === null ? 'Is hafte: --' : 'Is hafte: ' + fmtDeltaText(chg)}</div>
-    </div>`;
-  }).join('');
-}
-
-function animateNumber(el, target){
-  const start = 0;
-  const dur = 900;
-  const t0 = performance.now();
-  function step(t){
-    const p = Math.min(1, (t - t0) / dur);
-    const eased = 1 - Math.pow(1-p, 3);
-    el.textContent = fmtNum(start + (target-start)*eased);
-    if (p < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
-/* ---------- Render: Weekly ---------- */
-function renderWeekly(){
-  const el = document.getElementById('weeklyContent');
-  if (rows.length === 0){ el.innerHTML = ''; return; }
-  const last3 = rows.slice(-3);
-  while (last3.length < 3) last3.unshift(null);
-
-  const head = `<div class="week-row head"><span>Platform</span>${last3.map((r,i) => `<span>${r ? fmtDate(r.date).split(' ').slice(0,2).join(' ') : '--'}</span>`).join('')}</div>`;
-  const body = PLATFORMS.map(p => {
-    const cells = last3.map((r,i) => {
-      const val = r ? r.v[p.key] : null;
-      const isCurrent = i === last3.length-1;
-      return `<span class="week-val ${isCurrent?'current':''}">${val !== null && val !== undefined ? fmtNum(val) : '—'}</span>`;
-    }).join('');
-    return `<div class="week-row"><div class="week-plat">${badge(p.icon,p.color)}${p.name}</div>${cells}</div>`;
-  }).join('');
-
-  const latest = rows[rows.length-1];
-  const prev = rows.length > 1 ? rows[rows.length-2] : null;
-  const newTotal = prev ? sumRow(latest.v) - sumRow(prev.v) : null;
-
-  el.innerHTML = `
-    <div class="week-table">${head}${body}</div>
-    <div class="week-new-banner">
-      <div class="lbl">IS HAFTE TOTAL NAYE FOLLOWERS</div>
-      <div class="num">${newTotal === null ? '--' : (newTotal>=0?'+':'') + fmtNum(newTotal)}</div>
-    </div>
-  `;
-}
-
-/* ---------- Render: Monthly ---------- */
-function renderMonthly(){
-  const el = document.getElementById('monthlyContent');
-  if (rows.length === 0){ el.innerHTML = ''; return; }
-  const byMonth = {};
-  rows.forEach(r => { byMonth[monthKey(r.date)] = r; });
-  const keys = Object.keys(byMonth).sort();
-
-  const html = keys.map((k, idx) => {
-    const row = byMonth[k];
-    const prevRow = idx > 0 ? byMonth[keys[idx-1]] : null;
-    const total = sumRow(row.v);
-    const prevTotal = prevRow ? sumRow(prevRow.v) : null;
-    const chg = prevTotal !== null ? total - prevTotal : null;
-    const [y,m] = k.split('-');
-    const monthLabel = `${MONTHS_UR[parseInt(m)-1]} ${y}`;
-    const platRows = PLATFORMS.map(p => {
-      const val = row.v[p.key];
-      const pVal = prevRow ? prevRow.v[p.key] : null;
-      const pchg = (val !== null && pVal !== null) ? val - pVal : null;
-      return `<div class="month-plat-row">
-        ${badge(p.icon,p.color,'')}
-        <span class="name">${p.name}</span>
-        <span class="val">${val !== null ? fmtNum(val) : '—'}</span>
-        <span class="chg ${deltaClass(pchg||0)}">${pchg === null ? '' : fmtDeltaText(pchg)}</span>
-      </div>`;
-    }).join('');
-    return `
-    <div class="month-item" data-idx="${idx}">
-      <div class="month-head" onclick="toggleMonth(${idx})">
-        <div><div class="month-name">${monthLabel}</div><div class="month-total">Total: ${fmtNum(total)}${chg!==null ? ' · '+fmtDeltaText(chg) : ''}</div></div>
-        <div class="month-chevron">${ICONS.chevron}</div>
-      </div>
-      <div class="month-body"><div class="month-body-inner">${platRows}</div></div>
-    </div>`;
-  }).reverse().join('');
-
-  el.innerHTML = html;
-  const first = el.querySelector('.month-item');
-  if (first) first.classList.add('open');
-}
-function toggleMonth(idx){
-  document.querySelectorAll('.month-item').forEach(item => {
-    if (parseInt(item.dataset.idx) === idx) item.classList.toggle('open');
-  });
-}
-
-/* ---------- Render: Trends ---------- */
-function renderTrendChips(){
-  const wrap = document.getElementById('trendChips');
-  wrap.innerHTML = PLATFORMS.map(p => `<div class="chip ${p.key===selectedTrendPlatform?'active':''}" data-key="${p.key}">${p.name}</div>`).join('');
-  wrap.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      selectedTrendPlatform = chip.dataset.key;
-      renderTrendChips();
-      renderTrendLine();
-    });
-  });
-}
-function renderTrendLine(){
-  if (rows.length === 0) return;
-  const p = PLATFORMS.find(pp => pp.key === selectedTrendPlatform);
-  document.getElementById('trendLineTitle').textContent = `${p.name} — Growth Trend`;
-  const labels = rows.map(r => fmtDate(r.date));
-  const data = rows.map(r => r.v[selectedTrendPlatform]);
-  const ctx = document.getElementById('trendLineChart');
-  if (lineChart) lineChart.destroy();
-  lineChart = new Chart(ctx, {
-    type:'line',
-    data:{ labels, datasets:[{
-      data, borderColor:'#FF204E', borderWidth:2.5, pointRadius:0, tension:0.35, fill:true,
-      backgroundColor: (c) => {
-        const g = c.chart.ctx.createLinearGradient(0,0,0,190);
-        g.addColorStop(0,'rgba(255,32,78,0.35)'); g.addColorStop(1,'rgba(255,32,78,0)'); return g;
-      },
-      spanGaps:true,
-    }]},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ mode:'index', intersect:false, backgroundColor:'#151B3D', titleColor:'#9BA2C7', bodyColor:'#F5F6FB', borderColor:'rgba(255,255,255,0.1)', borderWidth:1 } },
-      scales:{
-        x:{ display:false },
-        y:{ grid:{ color:'rgba(255,255,255,0.06)' }, ticks:{ color:'#6870A0', font:{ size:10 } } }
-      },
-      interaction:{ mode:'nearest', axis:'x', intersect:false }
-    }
-  });
-}
-function renderDoughnut(){
-  if (rows.length === 0) return;
-  const latest = rows[rows.length-1];
-  const ctx = document.getElementById('trendDoughnutChart');
-  const labels = PLATFORMS.map(p => p.name);
-  const data = PLATFORMS.map(p => latest.v[p.key] || 0);
-  const colors = PLATFORMS.map(p => p.color);
-  if (doughnutChart) doughnutChart.destroy();
-  doughnutChart = new Chart(ctx, {
-    type:'doughnut',
-    data:{ labels, datasets:[{ data, backgroundColor:colors, borderWidth:2, borderColor:'#151B3D' }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{ legend:{ display:false } } }
-  });
-  document.getElementById('doughnutLegend').innerHTML = PLATFORMS.map(p => `<div class="legend-item"><span class="legend-dot" style="background:${p.color}"></span>${p.name}</div>`).join('');
-}
-
-/* ---------- Render: Tests ---------- */
-let testFilter = 'upcoming';
-function statusOf(entry){
-  const now = new Date();
-  if (entry.tba) return 'tba';
-  const start = entry.start, end = entry.end || entry.start;
-  if (!start) return 'tba';
-  if (now > end) return 'past';
-  if (now >= start && now <= end) return 'ongoing';
-  return 'upcoming';
-}
-function countdownText(entry, status){
-  if (status === 'tba') return entry.tbaText || 'Tareekh Jald Aayegi';
-  if (status === 'past') return 'Ho Chuka';
-  if (status === 'ongoing') return 'Chal Raha Hai';
-  const now = new Date();
-  const diffMs = entry.start - now;
-  const days = Math.ceil(diffMs / 86400000);
-  return days <= 0 ? 'Aaj Hai!' : `${days} din baqi`;
-}
-function renderTests(){
-  const el = document.getElementById('testsContent');
-  const parts = [];
-  TEST_GROUPS.forEach(group => {
-    const filtered = group.entries.filter(entry => {
-      const st = statusOf(entry);
-      if (testFilter === 'all') return true;
-      if (testFilter === 'upcoming') return st === 'upcoming' || st === 'ongoing' || st === 'tba';
-      if (testFilter === 'past') return st === 'past';
-      return true;
-    });
-    if (filtered.length === 0) return;
-    const sorted = filtered.slice().sort((a,b) => {
-      if (!a.start) return 1; if (!b.start) return -1;
-      return testFilter === 'past' ? b.start - a.start : a.start - b.start;
-    });
-    const entriesHtml = sorted.map(entry => {
-      const st = statusOf(entry);
-      const dateBlock = entry.start ? `<div class="d">${entry.start.getDate()}</div><div class="m">${MONTHS_UR[entry.start.getMonth()]} '${String(entry.start.getFullYear()).slice(2)}</div>` : `<div class="d">?</div><div class="m">TBA</div>`;
-      const rangeText = entry.start ? (entry.end && entry.end.getTime() !== entry.start.getTime() ? `${fmtDate(entry.start)} – ${fmtDate(entry.end)}` : fmtDate(entry.start) + (entry.note==='onward' ? ' se onward' : '')) : '';
-      const statusLabel = { past:'Guzar Chuka', ongoing:'Chal Raha Hai', upcoming:'Scheduled', tba:'TBA' }[st];
-      return `
-      <div class="exam-entry status-${st}">
-        <div class="exam-date-block">${dateBlock}</div>
-        <div class="exam-info">
-          <div class="exam-sub">${entry.label}</div>
-          <div class="exam-range">${rangeText || 'Tareekh jald aayegi'} · ${countdownText(entry, st)}</div>
+  const grid = $('#overviewGrid');
+  const latest = latestRow();
+  const prev = prevRow(1);
+  const total = totalLatest();
+  const change = weeklyTotalChange();
+  $('#communityChip').textContent = `Community ${fmt(total)}`;
+  $('#weekChip').textContent = `Is hafte ${change==null?'—':deltaText(change)}`;
+  let top = {name:'—', value:-1};
+  PLATFORM_META.forEach(p => { const v = latest ? latest[p.key] || 0 : 0; if(v > top.value) top = {name:p.name, value:v}; });
+  $('#topChip').textContent = `Top ${top.name}`;
+  grid.innerHTML = '';
+  const cards = PLATFORM_META.map(p => {
+    const cur = latest ? latest[p.key] : null;
+    const prv = prev ? prev[p.key] : null;
+    const d = calcChange(p.key, cur, prv);
+    return `<div class="card">
+      <div class="mini-row">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          <span class="platform-dot" style="background:${p.color}"></span>
+          <div class="label" style="font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
         </div>
-        <div class="exam-status ${st}">${statusLabel}</div>
-      </div>`;
-    }).join('');
-    parts.push(`<div class="exam-group"><div class="exam-group-title">${group.title}</div>${entriesHtml}</div>`);
-  });
-  el.innerHTML = parts.length ? parts.join('') : `<div style="text-align:center;color:var(--text-faint);padding:30px 0;font-size:13px;">Is filter mein koi test nahi mila.</div>`;
+        <button class="open-btn" onclick="openUrl('${p.url}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+        </button>
+      </div>
+      <div class="metric">${fmt(cur)}</div>
+      <div class="delta ${deltaClass(d)}">${d==null?'—':deltaText(d)} is hafte</div>
+      <div class="bar"><div style="width:${clamp((cur||0)/Math.max(...PLATFORM_META.map(x=>latest?.[x.key]||0),1)*100,5,100)}%"></div></div>
+    </div>`;
+  }).join('');
+  grid.innerHTML = `<div class="card" style="grid-column:1/-1">
+      <div class="label">Total community count</div>
+      <div class="metric">${fmt(total)}</div>
+      <div class="delta ${deltaClass(change)}">${change==null?'—':deltaText(change)} vs last week</div>
+    </div>` + cards;
 }
-
-/* ---------- Render: Results ---------- */
-function renderResults(){
-  const exams = ['MDCAT','ECAT','BCAT','SAT','Inter','Matric'];
-  document.getElementById('resultsGrid').innerHTML = exams.map(e => `
-    <div class="results-chip"><div class="rname">${e}</div><div class="rsoon">Coming Soon</div></div>
+function renderWeekly(){
+  const list = $('#weeklyList');
+  const a = latestRow(), b = prevRow(1), c = prevRow(2);
+  const total = weeklyTotalChange();
+  $('#weeklyTotal').textContent = total==null ? '—' : deltaText(total);
+  list.innerHTML = PLATFORM_META.map(p => `
+    <div class="platform-item">
+      <div style="min-width:0">
+        <div class="platform-name">${p.name}</div>
+        <div class="platform-link">${a?.date ? a.date.toLocaleDateString('en-PK',{day:'numeric',month:'short',year:'numeric'}) : ''}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px">
+          <div class="card" style="padding:8px"><div class="label">2 weeks ago</div><div style="font-weight:900">${fmt(c?.[p.key])}</div></div>
+          <div class="card" style="padding:8px"><div class="label">Last week</div><div style="font-weight:900">${fmt(b?.[p.key])}</div></div>
+          <div class="card" style="padding:8px"><div class="label">Is hafte</div><div style="font-weight:900">${fmt(a?.[p.key])}</div></div>
+        </div>
+      </div>
+      <button class="open-btn" onclick="openUrl('${p.url}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg></button>
+    </div>
   `).join('');
 }
-
-/* ---------- Tab bar & navigation ---------- */
-const TABS = [
-  { id:'overview', label:'Overview', icon:ICONS.tabs.overview },
-  { id:'weekly',   label:'Weekly',   icon:ICONS.tabs.weekly },
-  { id:'monthly',  label:'Monthly',  icon:ICONS.tabs.monthly },
-  { id:'trends',   label:'Trends',   icon:ICONS.tabs.trends },
-  { id:'tests',    label:'Tests',    icon:ICONS.tabs.tests },
-  { id:'results',  label:'Results',  icon:ICONS.tabs.results },
-];
-function renderTabbar(){
-  const bar = document.getElementById('tabbar');
-  bar.innerHTML = TABS.map((t,i) => `
-    <button class="tab-btn ${i===0?'active':''}" data-id="${t.id}">
-      ${t.icon}<span>${t.label}</span><span class="tdot"></span>
-    </button>`).join('');
-  bar.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.id));
+function monthKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function renderMonthly(){
+  const byMonth = {};
+  state.rows.forEach((r,i)=>{
+    const k = monthKey(r.date);
+    byMonth[k] ||= [];
+    byMonth[k].push(r);
+  });
+  const acc = $('#monthlyAcc');
+  acc.innerHTML = Object.entries(byMonth).reverse().map(([k, arr], idx)=>{
+    const first = arr[0], last = arr[arr.length-1];
+    const monthName = new Intl.DateTimeFormat('en-PK',{month:'long',year:'numeric'}).format(first.date);
+    const rows = PLATFORM_META.map(p => {
+      const ch = (last?.[p.key] ?? 0) - (first?.[p.key] ?? 0);
+      return `<div class="month-row">
+        <div>${p.name}</div>
+        <div>${fmt(first?.[p.key])}</div>
+        <div>${fmt(last?.[p.key])}</div>
+        <div style="font-weight:800;color:${ch>=0?'#15803d':'#b91c1c'}">${deltaText(ch)}</div>
+      </div>`;
+    }).join('');
+    return `<details ${idx===0?'open':''}>
+      <summary>${monthName}<span class="muted">${arr.length} entries</span></summary>
+      <div class="month-grid">${rows}</div>
+    </details>`;
+  }).join('');
+}
+function renderTests(){
+  const now = new Date();
+  const list = $('#testsList');
+  list.innerHTML = EXAMS.map(([title, entries])=>{
+    const chips = entries.map(([year, txt])=>{
+      let cls='soon-muted', label='Past';
+      if(/TBA|Jald/i.test(txt)) { cls='soon-muted'; label='Tareekh Jald Aayegi'; }
+      else if(/Scheduled/i.test(txt)) { cls='soon'; label='Scheduled'; }
+      else { cls='past'; label='Past'; }
+      return `<span class="date-chip ${cls}">${year} • ${txt} • ${label}</span>`;
+    }).join('');
+    return `<div class="exam"><h4>${title}</h4><div>${chips}</div></div>`;
+  }).join('');
+}
+let lineChart, pieChart;
+function renderCharts(){
+  const select = $('#trendSelect');
+  select.innerHTML = PLATFORM_META.map(p=>`<option value="${p.key}">${p.name}</option>`).join('');
+  select.value = Object.keys(state.dataByPlatform)[0];
+  drawLine();
+  drawPie();
+  select.onchange = () => drawLine();
+}
+function drawLine(){
+  const key = $('#trendSelect').value;
+  const label = PLATFORM_META.find(p=>p.key===key)?.name || key;
+  const ctx = $('#lineChart').getContext('2d');
+  if(lineChart) lineChart.destroy();
+  lineChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: state.rows.map(r => r.date.toLocaleDateString('en-PK',{month:'short',day:'numeric'})),
+      datasets:[{
+        label,
+        data: state.rows.map(r => r[key]),
+        borderColor: PLATFORM_META.find(p=>p.key===key)?.color || '#ff204e',
+        backgroundColor:'rgba(255,32,78,.08)',
+        fill:true,
+        tension:.35,
+        pointRadius:2,
+        pointHoverRadius:5,
+        borderWidth:3
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false}, ticks:{maxTicksLimit:6, color:'#64748b'}},
+        y:{grid:{color:'#eef2f7'}, ticks:{color:'#64748b'}}
+      }
+    }
   });
 }
-function switchTab(id){
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
-  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
-  document.getElementById('pages').scrollTop = 0;
-  if (id === 'trends' && rows.length){ renderTrendLine(); renderDoughnut(); }
-}
-
-document.querySelectorAll('.test-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.test-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    testFilter = tab.dataset.filter;
-    renderTests();
+function drawPie(){
+  const latest = latestRow();
+  const ctx = $('#pieChart').getContext('2d');
+  if(pieChart) pieChart.destroy();
+  pieChart = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels: PLATFORM_META.map(p=>p.name),
+      datasets:[{
+        data: PLATFORM_META.map(p => latest?.[p.key] || 0),
+        backgroundColor: PLATFORM_META.map(p=>p.color),
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      cutout:'58%',
+      plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxWidth:8, color:'#334155'}}}
+    }
   });
-});
-
-/* ---------- Master render ---------- */
+}
+function setActive(tab){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.target===tab));
+  $('#'+tab).classList.add('active');
+}
 function renderAll(){
-  renderOverview();
-  renderWeekly();
-  renderMonthly();
-  renderTrendChips();
-  if (document.getElementById('page-trends').classList.contains('active')){ renderTrendLine(); renderDoughnut(); }
-  renderTests();
-  renderResults();
+  renderOverview(); renderWeekly(); renderMonthly(); renderTests(); renderCharts();
+  $('#loading').style.display='none';
+  $('#app').style.display='flex';
+  $('#errorScreen').style.display='none';
+  $('#bannerError').style.display='none';
+  $('#lastRefresh').textContent = new Date().toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit'});
 }
-
-/* ---------- Offline handling ---------- */
-function updateOnlineStatus(){
-  const banner = document.getElementById('offline-banner');
-  if (!navigator.onLine){
-    banner.classList.add('show');
-    document.getElementById('offlineText').textContent = 'Internet nahi hai — purana data dikha rahe hain';
-  } else {
-    banner.classList.remove('show');
-    silentRefresh();
-  }
-}
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
-
-async function silentRefresh(){
+async function refreshData(silent=false){
   try{
-    const fresh = await fetchSheet();
-    if (fresh.length){ rows = fresh; saveCache(rows); renderAll(); }
-  }catch(e){ /* keep showing existing data */ }
-}
-
-/* ---------- Init ---------- */
-async function init(){
-  document.getElementById('error-screen').style.display = 'none';
-  try{
-    rows = await fetchSheet();
-    saveCache(rows);
+    const rows = await fetchSheet();
+    preprocess(rows);
+    renderAll();
+    if('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r=>r?.active?.postMessage?.({type:'CACHE_SHEET'})).catch(()=>{});
   }catch(e){
-    const cached = loadCache();
-    if (cached && cached.length){
-      rows = cached;
-    } else {
-      showError();
-      return;
+    console.error(e);
+    if(!silent){
+      $('#loading').style.display='none';
+      $('#app').style.display='none';
+      $('#errorScreen').style.display='flex';
+    }else{
+      $('#bannerError').style.display='flex';
     }
   }
-  renderTabbar();
-  renderAll();
-  document.getElementById('splash').style.display = 'none';
-  document.getElementById('app').hidden = false;
-  updateOnlineStatus();
-  if (refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(silentRefresh, REFRESH_MS);
 }
-function showError(){
-  document.getElementById('splash').style.display = 'none';
-  document.getElementById('error-screen').style.display = 'flex';
-}
-document.getElementById('retryBtn').addEventListener('click', () => {
-  document.getElementById('error-screen').style.display = 'none';
-  document.getElementById('splash').style.display = 'flex';
-  init();
+document.getElementById('tabs').addEventListener('click', e=>{
+  const btn = e.target.closest('.tab');
+  if(btn) setActive(btn.dataset.target);
 });
-
-if ('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
+document.getElementById('retryBtn').onclick = ()=>{ $('#loading').style.display='flex'; $('#errorScreen').style.display='none'; refreshData(false); };
+document.getElementById('inlineRetry').onclick = ()=>refreshData(false);
+window.addEventListener('online', ()=>{ $('#bannerOffline').style.display='none'; refreshData(true); });
+window.addEventListener('offline', ()=>{ $('#bannerOffline').style.display='flex'; });
+document.addEventListener('gesturestart', e=>e.preventDefault(), {passive:false});
+document.addEventListener('touchstart', e=>{}, {passive:true});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
-
-init();
+refreshData(false);
+setInterval(()=>refreshData(true), 5*60*1000);
 </script>
 </body>
 </html>
